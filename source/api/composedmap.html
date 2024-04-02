@@ -427,11 +427,9 @@ document.write(`
 </li>
 <li class="toctree-l1"><a class="reference internal" href="utilities/linearalgebra.html">Linear Algebra</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utilities/kokkoswrappers.html">Kokkos Array Conversions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="multivariateexpansionworker.html">Multivariate Expansion Worker</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="templateconcepts.html">Template Concepts</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-3"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="concepts/cachedparameterization.html">Cached Parameterization Concept</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-4"><i class="fa-solid fa-chevron-down"></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="multivariateexpansionworker.html">Multivariate Expansion Worker</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tensorproductfunction.html">Tensor Product Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multivariatebasis/multivariateexpansionworker.html">Multivariate Expansion Worker</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="concepts/parameterizedfunction.html">Parameterized Function Concept</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-5"><i class="fa-solid fa-chevron-down"></i></label><ul>
@@ -445,6 +443,12 @@ document.write(`
 <li class="toctree-l1 has-children"><a class="reference internal" href="maptraining.html">Map Training</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-6"><i class="fa-solid fa-chevron-down"></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="maptraining/trainmap.html">Train Map</a></li>
 <li class="toctree-l2"><a class="reference internal" href="maptraining/trainmapadaptive.html">Adaptive Map Training</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="multivariatebasis.html">Multivariate Basis Evaluation</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-7"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="multivariatebasis/univariatebasis.html">Univariate Bases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multivariatebasis/basisevaluator.html">Basis Evaluators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multivariatebasis/multivariateexpansionworker.html">Multivariate Expansion Worker</a></li>
 </ul>
 </li>
 </ul>
@@ -539,13 +543,20 @@ T(x) = T_L(x) \circ \ \dots \ \circ T_1(x),
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5mpart11ComposedMap9SetCoeffsEN6Kokkos4ViewIPKdN6Kokkos9HostSpaceEEE">
-<span class="target" id="classmpart_1_1_composed_map_1a2058068f0d17ead2d90f52c654c027b4"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SetCoeffs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">View</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">HostSpace</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">coeffs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5mpart11ComposedMap9SetCoeffsEN6Kokkos4ViewIPKdN6Kokkos9HostSpaceEEE" title="Permalink to this definition">#</a><br /></dt>
-<dd></dd></dl>
+<dt class="sig sig-object cpp" id="_CPPv4N5mpart11ComposedMap9SetCoeffsEN6Kokkos4ViewIPKd11MemorySpaceEE">
+<span class="target" id="classmpart_1_1_composed_map_1a0e628bce6cf521818044101d0c75e693"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">SetCoeffs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">View</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5mpart11ComposedMapE" title="mpart::ComposedMap::MemorySpace"><span class="n"><span class="pre">MemorySpace</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">coeffs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5mpart11ComposedMap9SetCoeffsEN6Kokkos4ViewIPKd11MemorySpaceEE" title="Permalink to this definition">#</a><br /></dt>
+<dd><p>Set the internally stored view of coefficients. </p>
+<p>Performs a deep copy of the input coefficients to the internally stored coefficients. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coeffs</strong> – A view containing the coefficients to copy. </p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5mpart11ComposedMap10WrapCoeffsEN6Kokkos4ViewIPdN6Kokkos9HostSpaceEEE">
-<span class="target" id="classmpart_1_1_composed_map_1a26bac65c9f31b3ee64b21a11132fe354"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">WrapCoeffs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">View</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">HostSpace</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">coeffs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5mpart11ComposedMap10WrapCoeffsEN6Kokkos4ViewIPdN6Kokkos9HostSpaceEEE" title="Permalink to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5mpart11ComposedMap10WrapCoeffsEN6Kokkos4ViewIPd11MemorySpaceEE">
+<span class="target" id="classmpart_1_1_composed_map_1a96514695cc27bab2945355dc6c4a1bc1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">WrapCoeffs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Kokkos</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">View</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5mpart11ComposedMapE" title="mpart::ComposedMap::MemorySpace"><span class="n"><span class="pre">MemorySpace</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">coeffs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5mpart11ComposedMap10WrapCoeffsEN6Kokkos4ViewIPd11MemorySpaceEE" title="Permalink to this definition">#</a><br /></dt>
 <dd><p>Wrap the internal coefficient view around another view. </p>
 <p>Performs a shallow copy of the input coefficients to the internally stored coefficients. If values in the view passed to this function are changed, the values will also change in the internally stored view. </p>
 <dl class="field-list simple">
