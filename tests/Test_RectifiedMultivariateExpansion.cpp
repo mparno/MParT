@@ -15,21 +15,21 @@ TEST_CASE("RectifiedMultivariateExpansion, Unrectified", "[RMVE_NoRect]") {
     unsigned int dim = 3;
     unsigned int maxOrder = 2;
     using T = ProbabilistHermite;
-    // Create a rectified MVE equivalent to a simple Hermite expansion
-    using OffdiagEval_T = BasisEvaluator<BasisHomogeneity::Homogeneous, T>;
-    using DiagEval_T = BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous, Kokkos::pair<T, T>, Identity>;
+    
+    using Eval_T = BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous, Kokkos::pair<T, T>, Identity>;
+
     using RectExpansion_T = RectifiedMultivariateExpansion<MemorySpace, T, T, Identity>;
-    BasisEvaluator<BasisHomogeneity::Homogeneous, T> basis_eval_offdiag;
-    BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous, Kokkos::pair<T, T>, Identity> basis_eval_diag{dim};
-    FixedMultiIndexSet<MemorySpace> fmset_offdiag(dim-1, maxOrder);
-    auto limiter = MultiIndexLimiter::NonzeroDiag();
-    FixedMultiIndexSet<MemorySpace> fmset_diag = MultiIndexSet::CreateTotalOrder(dim, maxOrder, limiter).Fix(true);
-    MultivariateExpansionWorker<OffdiagEval_T, MemorySpace> worker_off(fmset_offdiag, basis_eval_offdiag);
-    MultivariateExpansionWorker<DiagEval_T, MemorySpace> worker_diag(fmset_diag, basis_eval_diag);
-    RectExpansion_T rect_mve(worker_off, worker_diag);
+    
+    Eval_T basis_eval{dim};
+
+    FixedMultiIndexSet<MemorySpace> fmset(dim, maxOrder);
+    MultivariateExpansionWorker<Eval_T, MemorySpace> worker(fmset, basis_eval);
+
+    RectExpansion_T rect_mve(worker);
 
     FixedMultiIndexSet<MemorySpace> fmset_mve {dim, maxOrder};
-    MultivariateExpansion<OffdiagEval_T, MemorySpace> mve(1, fmset_mve, basis_eval_offdiag);
+    MultivariateExpansion<Eval_T, MemorySpace> mve(1, fmset_mve, basis_eval);
+
     SECTION("Initialization") {
         REQUIRE(rect_mve.numCoeffs == mve.numCoeffs);
         REQUIRE(rect_mve.inputDim == dim);
@@ -177,15 +177,11 @@ TEMPLATE_TEST_CASE("Single Sigmoid RectifiedMultivariateExpansion","[single_sigm
     DiagEval_T basis_eval_diag {dim, basis_offdiag, basis_diag};
     // Setup multi index sets
     unsigned int maxOrder = 4;
-    FixedMultiIndexSet<MemorySpace> fmset_offdiag (dim-1, maxOrder);
     unsigned int sigmoid_order = 4; // const, linear, left ET, right ET, sigmoid
-    auto limiter = MultiIndexLimiter::NonzeroDiag();
-    MultiIndexSet mset_diag = MultiIndexSet::CreateTotalOrder(dim, sigmoid_order, limiter);
-    FixedMultiIndexSet<MemorySpace> fmset_diag = mset_diag.Fix(true);
+    FixedMultiIndexSet<MemorySpace> fmset(dim, maxOrder);
     // Setup expansion
-    MultivariateExpansionWorker<OffdiagEval_T, MemorySpace> worker_off(fmset_offdiag, basis_eval_offdiag);
-    MultivariateExpansionWorker<DiagEval_T, MemorySpace> worker_diag(fmset_diag, basis_eval_diag);
-    RectExpansion_T expansion(worker_off, worker_diag);
+    MultivariateExpansionWorker<DiagEval_T, MemorySpace> worker(fmset, basis_eval_diag);
+    RectExpansion_T expansion(worker);
 
     // Initialize Points and Coeffs
     Kokkos::View<double*, MemorySpace> coeffs("Input", expansion.numCoeffs);
@@ -207,9 +203,7 @@ TEMPLATE_TEST_CASE("Single Sigmoid RectifiedMultivariateExpansion","[single_sigm
     double edge_term_inv_1 = std::log(std::exp(1)-1)+1; // Where edge terms should equal 1
     for(unsigned int order = 1; order <= sigmoid_order; order++) {
         // Find index of coefficient for multiindex {0, order}
-        int idx = fmset_diag.MultiToIndex({0u, order});
-        REQUIRE(idx >= 0);
-        unsigned int coeff_idx = fmset_offdiag.Size() + idx;
+        unsigned int coeff_idx = fmset.MultiToIndex({0u, order});
         coeffs(coeff_idx) = 1.0; // Set the order term to 1
         StridedMatrix<double, MemorySpace> eval = expansion.Evaluate(points);
         // Due to how MVE_worker handles zeros, constant here can change between orders
@@ -237,7 +231,8 @@ TEMPLATE_TEST_CASE("Single Sigmoid RectifiedMultivariateExpansion","[single_sigm
     // Store the independent evaluations for each order of offdiag
     Kokkos::View<double**, MemorySpace> offdiag_eval ("OffdiagEval", maxOrder+1, numPts);
     for(unsigned int offdiag_check_order = 0; offdiag_check_order <= maxOrder; offdiag_check_order++) {
-        int offdiag_idx = fmset_offdiag.MultiToIndex({offdiag_check_order});
+
+        int offdiag_idx = fmset.MultiToIndex({offdiag_check_order, 0});
         REQUIRE(offdiag_idx >= 0);
         coeffs(offdiag_idx) = 1.0; // Add the offdiag term back
         StridedMatrix<double, MemorySpace> eval = expansion.Evaluate(points);
@@ -252,9 +247,10 @@ TEMPLATE_TEST_CASE("Single Sigmoid RectifiedMultivariateExpansion","[single_sigm
     }
     // Now check all the rectified diag terms together using stored evals
     SECTION("Rectified Evaluation") {
-        for(unsigned int coeff_idx = fmset_offdiag.Size(); coeff_idx < expansion.numCoeffs; coeff_idx++) {
+        std::vector<unsigned int> indices = worker.NonzeroDiagonalEntries();
+        for(unsigned int coeff_idx : indices) {
             coeffs(coeff_idx) = 1.0; // Set the corresponding midx term to 1
-            std::vector<unsigned int> multi = fmset_diag.IndexToMulti(coeff_idx - fmset_offdiag.Size());
+            std::vector<unsigned int> multi = fmset.IndexToMulti(coeff_idx);
             unsigned int m0 = multi[0], m1 = multi[1];
             StridedMatrix<double, MemorySpace> eval = expansion.Evaluate(points);
             for(int i = 0; i < numPts; i++) {
