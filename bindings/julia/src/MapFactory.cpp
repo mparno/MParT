@@ -19,9 +19,9 @@ void mpart::binding::MapFactoryWrapper(jlcxx::Module &mod) {
     });
 
     // CreateSigmoidComponent
-    mod.method("CreateSigmoidComponent", [](FixedMultiIndexSet<MemorySpace> mset_offdiag, FixedMultiIndexSet<MemorySpace> mset_diag, jlcxx::ArrayRef<double,1> centers, MapOptions opts){
+    mod.method("CreateSigmoidComponent", [](FixedMultiIndexSet<MemorySpace> mset, jlcxx::ArrayRef<double,1> centers, MapOptions opts){
         StridedVector<const double, MemorySpace> centersVec = JuliaToKokkos(centers);
-        return MapFactory::CreateSigmoidComponent<Kokkos::HostSpace>(mset_offdiag, mset_diag, centersVec, opts);
+        return MapFactory::CreateSigmoidComponent<Kokkos::HostSpace>(mset, centersVec, opts);
     });
 
     // CreateSigmoidTriangular

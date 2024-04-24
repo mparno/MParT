@@ -157,15 +157,14 @@ MEX_DEFINE(ConditionalMap_newSigmoidComp) (int nlhs, mxArray* plhs[],
   output.set(0, Session<ConditionalMapMex>::create(new ConditionalMapMex(inputDim,totalOrder,centers,opts)));
 }
 
-MEX_DEFINE(ConditionalMap_newSigmoidCompFromMsets) (int nlhs, mxArray* plhs[],
+MEX_DEFINE(ConditionalMap_newSigmoidCompFromMset) (int nlhs, mxArray* plhs[],
                                            int nrhs, const mxArray* prhs[]) {
-  InputArguments input(nrhs, prhs, 3 + MPART_MEX_MAPOPTIONS_ARGCOUNT);
+  InputArguments input(nrhs, prhs, 2 + MPART_MEX_MAPOPTIONS_ARGCOUNT);
   OutputArguments output(nlhs, plhs, 1);
-  const FixedMultiIndexSet<MemorySpace>& mset_offdiag = Session<FixedMultiIndexSet<MemorySpace>>::getConst(input.get(0));
-  const FixedMultiIndexSet<MemorySpace>& mset_diag = Session<FixedMultiIndexSet<MemorySpace>>::getConst(input.get(1));
-  StridedVector<const double, Kokkos::HostSpace> centers = MexToKokkos1d(prhs[2]);
-  MapOptions opts = binding::MapOptionsFromMatlab(input, 3);
-  output.set(0, Session<ConditionalMapMex>::create(new ConditionalMapMex(mset_offdiag, mset_diag, centers, opts)));
+  const FixedMultiIndexSet<MemorySpace>& mset = Session<FixedMultiIndexSet<MemorySpace>>::getConst(input.get(0));
+  StridedVector<const double, Kokkos::HostSpace> centers = MexToKokkos1d(prhs[1]);
+  MapOptions opts = binding::MapOptionsFromMatlab(input, 2);
+  output.set(0, Session<ConditionalMapMex>::create(new ConditionalMapMex(mset, centers, opts)));
 }
 
 MEX_DEFINE(ConditionalMap_newMap) (int nlhs, mxArray* plhs[],

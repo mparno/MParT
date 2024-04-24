@@ -26,30 +26,13 @@ namespace mpart{
     {
     public:
         using ExecutionSpace = typename MemoryToExecution<MemorySpace>::Space;
-        using DiagWorker_T = MultivariateExpansionWorker<
-            BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous,
-                Kokkos::pair<OffdiagEval, DiagEval>,
-            Rectifier>, MemorySpace
-        >;
-        using OffdiagWorker_T = MultivariateExpansionWorker<
-            BasisEvaluator<BasisHomogeneity::Homogeneous, OffdiagEval>,
-            MemorySpace
-        >;
+
         using Worker_T = MultivariateExpansionWorker<
             BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous,
                 Kokkos::pair<OffdiagEval, DiagEval>, //OffDiag and DiagEval are the same
             Rectifier>, MemorySpace
         >;
-
-
-        RectifiedMultivariateExpansion(OffdiagWorker_T const& unused_worker_,
-                                       Worker_T const& worker_diag_):
-                                    ConditionalMapBase<MemorySpace>(worker_diag_.InputSize(), 1, worker_diag_.NumCoeffs()),
-                                    worker(worker_diag_)
-        {
-            //throw std::invalid_argument( "calling old constructor" );
-        };
-
+        
         RectifiedMultivariateExpansion(Worker_T const& worker_):
                                     ConditionalMapBase<MemorySpace>(worker_.InputSize(), 1, worker_.NumCoeffs()),
                                     worker(worker_)

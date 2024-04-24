@@ -272,8 +272,7 @@ TEMPLATE_TEST_CASE("Multiple Sigmoid RectifiedMultivariateExpansion","[multi_sig
     using OffdiagBasis = typename TestType::first_type;
     using SigmoidShape = typename TestType::second_type;
     using Sigmoid_T = Sigmoid1d<MemorySpace,SigmoidShape>;
-    using OffdiagEval_T = BasisEvaluator<BasisHomogeneity::Homogeneous,OffdiagBasis>;
-    using DiagEval_T = BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous, Kokkos::pair<OffdiagBasis, Sigmoid_T>, SoftPlus>;
+    using Eval_T = BasisEvaluator<BasisHomogeneity::OffdiagHomogeneous, Kokkos::pair<OffdiagBasis, Sigmoid_T>, SoftPlus>;
     using RectExpansion_T = RectifiedMultivariateExpansion<MemorySpace, OffdiagBasis, Sigmoid_T, SoftPlus>;
     unsigned int maxOrder = 4;
     unsigned int dim = 3;
@@ -303,11 +302,9 @@ TEMPLATE_TEST_CASE("Multiple Sigmoid RectifiedMultivariateExpansion","[multi_sig
     // Set up evaluators, workers, and expansion
     Sigmoid_T basis_diag (center, width, weight);
     OffdiagBasis basis_offdiag;
-    OffdiagEval_T basis_eval_offdiag {basis_offdiag};
-    DiagEval_T basis_eval_diag {dim, basis_offdiag, basis_diag};
-    MultivariateExpansionWorker<OffdiagEval_T, MemorySpace> worker_off(fmset_offdiag, basis_eval_offdiag);
-    MultivariateExpansionWorker<DiagEval_T, MemorySpace> worker_diag(fmset_diag, basis_eval_diag);
-    RectExpansion_T expansion(worker_off, worker_diag);
+    Eval_T basis_eval_diag {dim, basis_offdiag, basis_diag};
+    MultivariateExpansionWorker<Eval_T, MemorySpace> worker(fmset_diag, basis_eval_diag);
+    RectExpansion_T expansion(worker);
     // Setup coeffs
     Kokkos::View<double*, MemorySpace> coeffs("Input", expansion.numCoeffs);
     for(int c = 0; c < expansion.numCoeffs; c++) coeffs(c) = 1.-double(c)/expansion.numCoeffs;
