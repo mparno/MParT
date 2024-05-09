@@ -7,6 +7,7 @@
 #include "MParT/Utilities/KokkosSpaceMappings.h"
 #include "MParT/Utilities/Miscellaneous.h"
 #include "MParT/Utilities/MathFunctions.h"
+#include <iostream>
 
 namespace mpart {
 
@@ -39,46 +40,94 @@ struct Logistic {
 };
 }  // namespace SigmoidTypeSpace
 
+
+/** If the array of starting indices \f$\sigma_k\f$ is not defined explicitly, we can 
+ *  will interpret the length of the weight and center vectors in one of these ways.
+*/
+enum class SigmoidSumSizeType {
+    Linear, // The number of terms in the sum satisfy k_1 = 1 and k_i = k_{i-1} + 1
+    Constant, // k_i = 1 for all i
+};
+
 /**
  * @brief Class to represent univariate function space spanned by sigmoids.
  * Order should generally be >= 4.
  *
- * @details This class stores functions of the form
- * \f[f_{k}(x;\mathbf{c},\mathbf{b},\mathbf{w})=b_0+b_1(x-c_1)+w_2g(-b_2(x-c_2))+w_3g(b_3(x-c_3))+\sum_{j=4}^kw_js(b_j(x-c_j))\f]
- *
- * where \f$w_j,b_j\geq 0\f$ and \f$s\f$ is a monotone increasing function.
- * While it is expected that \f$s\f$ is a sigmoid (e.g., Logistic or Erf
- * function), any monotone function will allow this class to work as expected.
- * Without loss of generality we set \f$b_0,b_1\equiv 1\f$ and
- * \f$c_1\equiv0\f$-- for a linear basis, this will be equivalent to the class
- * of functions presented above. If \f$k\in\{0,1\}\f$, then we revert only to
- * (increasing) linear functions. The function \f$g\f$ should be an "edge" term
- * where it is a monotone increasing function with
- * \f$\lim_{x\to-\infty}g(x)=0\f$ and \f$\lim_{x\to\infty}g(x)=\infty\f$. The
- * difference here between \f$g\f$ and \f$s\f$ is that \f$s\f$ is generally
- * expected to approach a constant value as \f$x\to\infty\f$.
- *
- *
- * In the above expression, we denote \f$\mathbf{c}\f$ as the "centers",
- * \f$\mathbf{b}\f$ as the "width" or "bandwidth", and \f$\mathbf{w}\f$ as the
- * "weights". If we want a function class that works with up to \f$n\f$
- * sigmoids, then we need to store two "center+width+weight" for the edge
- * terms, then one "center+width+weight" for the first order, then two
- * "center+width+weight"s for the second order (representing two sigmoids),
- * then three "center+width+weight"s for the third order and so on. Generally,
- * the weights will be uniform, but the centers and widths of these sigmoids can
+ * @details This class defines a family of basis functions $f_k(x)$ built from one-dimensional
+ * sigmoid functions.  This family is index by an integer \f$k\f$, similar to the 
+ * way the polynomial degree is used to index a class of orthogonal polynomials.  In particular,
+ * the family of functions is defined by 
+ * \f[
+   \begin{aligned}
+    f_0(x) & = 1 \\
+    f_1(x) & = x \\
+    f_2(x) & = w_0 g(-b_0(x-c_0))\\
+    f_3(x) & = w_1 g(b_1(x-c_1)) \\
+    f_k(x) & = \sum_{j=1}^{N_k} w_{kj} s( b_{kj}(x-c_{kj}))
+    \end{aligned}
+    \f]
+ *  where \f$c\f$ represents the "center" of a single sigmoid function $s$, \f$w_j,b_j\geq 0\f$ are positive constants, 
+ * \f$s\f$ is a monotone increasing function, and \f$g\f$ is an "edge" function
+ *  satisfying \f$\lim_{x\to-\infty}g(x)=0\f$ and \f$\lim_{x\to\infty}g(x)=\infty\f$.
+ * Generally, the weights will be uniform, but the centers and widths of these sigmoids can
  * affect behavior dramatically. If performing approximation in \f$L^2(\mu)\f$,
  * a good heuristic is to place the weights at the quantiles of \f$\mu\f$ and
  * create widths that are half the distance to the nearest neighbor.
  *
- * Currently the minimum order one can construct is 1, i.e., an affine map.
- *
+ * The quantities \f$w_{kj}\f$, \f$b_{kj}\f$, and \f$c_{kj}\f$ are stored in unrolled vectors and indexed
+ * by an array with values \f$\sigma_k\f$ that store the index of \f$c_{k0}\f$ in the unrolled vector,
+ * much like the vector used to define sparse matrices stored in CSR format.   For example if `c` is the
+ * unrolled vector of centers and `startInds` contains \f$\sigma_k\f$, then \f$c_{kj}\f$ is stored at `c[startInds[k]+j-1]`.
+ * 
  * @tparam MemorySpace Where the (nonlinear) parameters are stored
  * @tparam SigmoidType Class defining eval, @ref SigmoidTypeSpace
+ * @tparam EdgeType Class defining the edge function type, e.g., SoftPlus
  */
 template <typename MemorySpace, typename SigmoidType = SigmoidTypeSpace::Logistic, typename EdgeType = SoftPlus>
 class Sigmoid1d {
  public:
+
+    /** 
+     * @brief Constructs starting indices from the number of provided centers.
+     * @param centerSize The number of centers provided to the constructor, i.e., centers.extent(0)
+     * @param sumType The form of each term's expansion.  
+    */
+    static Kokkos::View<unsigned int*, MemorySpace> ConstructStartInds(unsigned int centerSize, 
+                                                                       SigmoidSumSizeType sumType){
+
+        unsigned int numTerms = Sigmoid1d<MemorySpace,SigmoidType,EdgeType>::ComputeNumSigmoids(centerSize, sumType);
+        Kokkos::View<unsigned int*, Kokkos::HostSpace> houtput("starting inds",0);
+        
+        if(centerSize<=2)
+            return Kokkos::View<unsigned int*, MemorySpace>("starting inds", 0);
+
+        if(sumType == SigmoidSumSizeType::Linear){
+            
+            if((centerSize-2) != (numTerms*(numTerms+1)/2)){
+                std::stringstream ss;
+                ss << "Sigmoid: Could not construct starting indices.  The size of the centers array cannot be used with the Linear sum type.";
+                ProcAgnosticError<std::invalid_argument>(ss.str().c_str());
+            }
+
+            Kokkos::resize(houtput, numTerms);
+            houtput(0)=2;
+            for(int i=1; i<numTerms; ++i){
+                houtput(i) = houtput(i-1) + i;
+            }
+
+        }else if(sumType == SigmoidSumSizeType::Constant){
+            numTerms = centerSize - 2; // 2 is to account for the edge terms
+            Kokkos::resize(houtput, numTerms);
+            houtput(0) = 2;
+            for(int i=1; i<numTerms; ++i){
+                houtput(i) = houtput(i-1) + 1;
+            }
+        }
+
+        return Kokkos::create_mirror_view_and_copy(MemorySpace(), houtput);
+    }
+
+
 	/**
 	 * @brief Construct a new Sigmoid 1d object
 	 *
@@ -88,11 +137,13 @@ class Sigmoid1d {
 	 * @param centers Where to center the sigmoids
 	 * @param widths How "wide" the basis functions should be
 	 * @param weights How much to weight the sigmoids linearly
+     * @param startInds Contains indices into "centers", "widths", and "weights" indicating where each term starts.  This contains the \f$\sigma_k\f$ values mentioned above.
 	 */
 	Sigmoid1d(Kokkos::View<double*, MemorySpace> centers,
 			  Kokkos::View<double*, MemorySpace> widths,
-			  Kokkos::View<double*, MemorySpace> weights)
-			: centers_(centers), widths_(widths), weights_(weights) {
+			  Kokkos::View<double*, MemorySpace> weights,
+              Kokkos::View<unsigned int*, MemorySpace> startInds)
+			: startInds_(startInds), centers_(centers), widths_(widths), weights_(weights) {
 		Validate();
 	}
 
@@ -106,13 +157,51 @@ class Sigmoid1d {
 	 * @param widths
 	 */
 	Sigmoid1d(Kokkos::View<double*, MemorySpace> centers,
-			  Kokkos::View<double*, MemorySpace> widths)
-			: centers_(centers), widths_(widths) {
+			  Kokkos::View<double*, MemorySpace> widths,
+              Kokkos::View<unsigned int*, MemorySpace> startInds)
+			: startInds_(startInds), centers_(centers), widths_(widths) {
 		Kokkos::View<double*, MemorySpace> weights ("Sigmoid weights", centers.extent(0));
 		Kokkos::deep_copy(weights, 1.0);
 		weights_ = weights;
 		Validate();
 	}
+
+    /**
+	 * @brief Construct a new Sigmoid 1d object
+	 *
+	 * Each input should either be of length \f$2 + n(n+1)/2\f$ if sumType==Linear
+     * or of length \f$2+n\f$ if sumType==Constant, where \f$n\f$ is the
+	 * number of sigmoids.
+	 *
+	 * @param centers Where to center the sigmoids
+	 * @param widths How "wide" the basis functions should be
+	 * @param weights How much to weight the sigmoids linearly
+     * @param sumType Indication of how the centers and widths should be interpreted: Either as separate basis
+     *  functions if sumType==Constant or if sumType==Linear, it will assume that basis function `k` includes the sum of `k-3` Sigmoid terms.
+	 */
+	Sigmoid1d(Kokkos::View<double*, MemorySpace> centers,
+			  Kokkos::View<double*, MemorySpace> widths,
+			  Kokkos::View<double*, MemorySpace> weights,
+              SigmoidSumSizeType sumType = SigmoidSumSizeType::Linear)
+			: Sigmoid1d(centers, widths, weights, ConstructStartInds(centers.extent(0), sumType)) {}
+
+    /**
+	 * @brief Construct a new Sigmoid 1d object from centers and widths
+	 *
+	 * Each input should either be of length \f$2 + n(n+1)/2\f$ if sumType==Linear
+     * or of length \f$2+n\f$ if sumType==Constant, where \f$n\f$ is the
+	 * number of sigmoids.
+	 *
+	 * @param centers Where to center the sigmoids
+	 * @param widths How "wide" the basis functions should be
+     * @param sumType Indication of how the centers and widths should be interpreted: Either as separate basis
+     *  functions if sumType==Constant or if sumType==Linear, it will assume that basis function `k` includes the sum of `k-3` Sigmoid terms.
+	 */
+	Sigmoid1d(Kokkos::View<double*, MemorySpace> centers,
+			  Kokkos::View<double*, MemorySpace> widths,
+              SigmoidSumSizeType sumType = SigmoidSumSizeType::Linear)
+			: Sigmoid1d(centers, widths, ConstructStartInds(centers.extent(0), sumType)) {}
+
 
 	/**
 	 * @brief Evaluate all sigmoids at one input
@@ -138,15 +227,22 @@ class Sigmoid1d {
 		output[3] =  weights_(1)*EdgeType::Evaluate( widths_(1)*(input-centers_(1)));
 		if (max_order == 3) return;
 
-		int param_idx = START_SIGMOIDS_IDX;
 		for (int curr_order = START_SIGMOIDS_ORDER; curr_order <= max_order; curr_order++) {
 			output[curr_order] = 0.;
-			for (int basis_idx = 0; basis_idx <= curr_order - START_SIGMOIDS_ORDER; basis_idx++) {
+
+            // Figure out what centers correspond to this term
+            int istart = startInds_(curr_order-START_SIGMOIDS_ORDER);
+            int iend = centers_.extent(0);
+            if((curr_order-START_SIGMOIDS_ORDER +1)<startInds_.extent(0)){
+                iend = startInds_(curr_order-START_SIGMOIDS_ORDER +1);
+            }
+            
+            // Evaluate the sum that defines this basis function
+			for (int param_idx = istart; param_idx < iend; param_idx++) {
 				output[curr_order] +=
 					weights_(param_idx) *
 					SigmoidType::Evaluate(widths_(param_idx) *
 						(input - centers_(param_idx)));
-				param_idx++;
 			}
 		}
 	}
@@ -181,11 +277,18 @@ class Sigmoid1d {
 		output_diff[3] = weights_(1)*widths_(1)*EdgeType::Derivative( widths_(1)*(input-centers_(1)));
 		if (max_order == 3) return;
 
-		int param_idx = START_SIGMOIDS_IDX;
 		for (int curr_order = START_SIGMOIDS_ORDER; curr_order <= max_order; curr_order++) {
 			output[curr_order] = 0.;
 			output_diff[curr_order] = 0.;
-			for (int basis_idx = 0; basis_idx <= curr_order - START_SIGMOIDS_ORDER; basis_idx++) {
+
+            // Figure out what centers correspond to this term
+            int istart = startInds_(curr_order-START_SIGMOIDS_ORDER);
+            int iend = centers_.extent(0);
+            if((curr_order-START_SIGMOIDS_ORDER +1)<startInds_.extent(0)){
+                iend = startInds_(curr_order-START_SIGMOIDS_ORDER +1);
+            }
+
+			for (int param_idx = istart; param_idx < iend; param_idx++) {
 				output[curr_order] +=
 					weights_(param_idx) *
 					SigmoidType::Evaluate(widths_(param_idx) *
@@ -194,7 +297,6 @@ class Sigmoid1d {
 					weights_(param_idx) * widths_(param_idx) *
 					SigmoidType::Derivative(widths_(param_idx) *
 						(input - centers_(param_idx)));
-				param_idx++;
 			}
 		}
 	}
@@ -235,12 +337,20 @@ class Sigmoid1d {
 		output_diff2[3] = weights_(1)*widths_(1)*widths_(1)*EdgeType::SecondDerivative( widths_(1)*(input-centers_(1)));
 		if (max_order == 3) return;
 
-		int param_idx = START_SIGMOIDS_IDX;
 		for (int curr_order = START_SIGMOIDS_ORDER; curr_order <= max_order; curr_order++) {
 			output[curr_order] = 0.;
 			output_diff[curr_order] = 0.;
 			output_diff2[curr_order] = 0.;
-			for (int basis_idx = 0; basis_idx <= curr_order - START_SIGMOIDS_ORDER; basis_idx++) {
+
+            // Figure out what centers correspond to this term
+            int istart = startInds_(curr_order-START_SIGMOIDS_ORDER);
+            int iend = centers_.extent(0);
+            if((curr_order-START_SIGMOIDS_ORDER +1)<startInds_.extent(0)){
+                iend = startInds_(curr_order-START_SIGMOIDS_ORDER +1);
+            }
+
+            // Inner loop to evaluate this term
+			for (int param_idx = istart; param_idx < iend; param_idx++) {
 				output[curr_order] +=
 					weights_(param_idx) *
 					SigmoidType::Evaluate(widths_(param_idx) *
@@ -253,7 +363,6 @@ class Sigmoid1d {
 					weights_(param_idx) * widths_(param_idx) * widths_(param_idx) *
 					SigmoidType::SecondDerivative(widths_(param_idx) *
 						(input - centers_(param_idx)));
-				param_idx++;
 			}
 		}
 	}
@@ -266,15 +375,20 @@ class Sigmoid1d {
 	KOKKOS_INLINE_FUNCTION int GetOrder() const { return order_; }
 
 	/// @brief Given the length of centers, return the number of sigmoid levels
-	static double LengthToOrder(int length) {
-		double n_sig_double = (MathSpace::sqrt(1 + 8 * length) - 1) / 2;
-		return n_sig_double;
+	static int ComputeNumSigmoids(int numCenters, SigmoidSumSizeType sumType){
+
+        if(sumType == SigmoidSumSizeType::Constant){
+            return numCenters - 2;
+        }else{
+            return (MathSpace::sqrt(1+8*(numCenters - 2)) - 1)/2;
+        }
 	}
 
  private:
 	void Validate() {
 		if (centers_.extent(0) != widths_.extent(0) ||
-				centers_.extent(0) != weights_.extent(0)) {
+			centers_.extent(0) != weights_.extent(0) ||
+            centers_.extent(0)<startInds_.extent(0)) {
 			std::stringstream ss;
 			ss << "Sigmoid: incompatible dims of centers and widths.\n";
 			ss << "centers: " << centers_.extent(0) << ", \n";
@@ -290,26 +404,42 @@ class Sigmoid1d {
 			ProcAgnosticError< std::invalid_argument>(
 				ss.str().c_str());
 		}
-		int n_sigmoid_centers = centers_.extent(0) - 2;
-		// Arithmetic sum length calculation
-		// Number of centers should be n_sigmoid_centers = num_sigmoids*(num_sigmoids+1)/2
-		// Solve for num_sigmoids
-		double n_sig_double = LengthToOrder(n_sigmoid_centers);
-		int n_sig = n_sig_double;
-		if (n_sig < 0 || MathSpace::abs((double)n_sig - n_sig_double) > 1e-15) {
-			std::stringstream ss;
-			ss << "Incorrect length of centers/widths/weights.";
-			ss << "Length should be of form 2+(1+2+3+...+n) for some order n";
-			ProcAgnosticError< std::invalid_argument>(
-				ss.str().c_str());
-		}
+        
+        if(startInds_.extent(0)>0){
+            Kokkos::View<unsigned int*, Kokkos::HostSpace> hStartInds("device inds", startInds_.extent(0));
+            Kokkos::deep_copy(hStartInds, startInds_); 
+            if(hStartInds(0)!=2){
+                std::stringstream ss;
+                ss << "Sigmoid: First term must start at index 2, but has startInds(0)=" << startInds_(0);
+                ProcAgnosticError<std::invalid_argument>(ss.str().c_str());
+            }
+        
+            // Make sure start inds are increasing
+            for(int i=1; i<hStartInds.extent(0); ++i){
+                if(hStartInds(i)<=hStartInds(i-1)){
+                    std::stringstream ss;
+                    ss << "Sigmoid: Starting indices must be strictly increasing.";
+                    ProcAgnosticError<std::invalid_argument>(ss.str().c_str());
+                }
+                if(hStartInds(i)>=centers_.extent(0)){
+                    std::stringstream ss;
+                    ss << "Sigmoid: All starting indices must be smaller than the number of sigmoid centers but ";
+                    ss << "startInds(" << i << ")=" << startInds_(i) << " and centers.extent(0)=" << centers_.extent(0) << ".";
+                    ProcAgnosticError<std::invalid_argument>(ss.str().c_str());
+                }
+            }
+        }
+
 		// one added for affine part of this, two added for edge terms
-		order_ = n_sig + 1 + 2;
+		order_ = startInds_.extent(0) + 1 + 2;
 	}
+
 	int order_;
 	static int constexpr START_SIGMOIDS_ORDER = 4;
 	static int constexpr START_SIGMOIDS_IDX = 2;
+    Kokkos::View<const unsigned int*, MemorySpace> startInds_;
 	Kokkos::View<const double*, MemorySpace> centers_, widths_, weights_;
+    
 };
 
 }  // namespace mpart

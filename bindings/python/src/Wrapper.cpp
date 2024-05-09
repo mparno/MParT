@@ -21,7 +21,8 @@ PYBIND11_MODULE(pympart, m) {
     // DebugMapWrapper<Kokkos::HostSpace>(m);
     MapFactoryWrapper<Kokkos::HostSpace>(m);
     MapObjectiveWrapper<Kokkos::HostSpace>(m);
-
+    Sigmoid1dWrapper(m);
+    
 #if defined(MPART_HAS_NLOPT)
     TrainOptionsWrapper(m);
     ATMOptionsWrapper(m);

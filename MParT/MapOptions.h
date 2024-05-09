@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <limits>
+#include "MParT/Sigmoid.h"
 
 namespace mpart{
 
@@ -65,8 +66,11 @@ namespace mpart{
         /** The type of edge terms to use with sigmoids */
         EdgeTypes edgeType = EdgeTypes::SoftPlus;
 
-        /** The "shape" of the edge terms in a sigmoid expansion (larger is "sharper" edge terms)*/
+        /** The "shape" of the edge terms in a sigmoid basis (larger is "sharper" edge terms)*/
         double edgeShape = 1.5;
+
+        /** How arrays of centers should be interpreted in sigmoid basis functions. */
+        SigmoidSumSizeType sigmoidBasisSumType;
 
         /** Linearization bounds for the 1d basis function. The basis function is linearized outside [lb,ub] */
         double basisLB = -std::numeric_limits<double>::infinity();
@@ -132,6 +136,8 @@ namespace mpart{
             ret &= (basisLB     == opts2.basisLB);
             ret &= (basisUB     == opts2.basisUB);
             ret &= (edgeType    == opts2.edgeType);
+            ret &= (edgeShape   == opts2.edgeShape);
+            ret &= (sigmoidBasisSumType == opts2.sigmoidBasisSumType);
             ret &= (sigmoidType == opts2.sigmoidType);
             ret &= (posFuncType == opts2.posFuncType);
             ret &= (quadType    == opts2.quadType);
@@ -153,6 +159,7 @@ namespace mpart{
             ss << "basisUB = " << basisUB << "\n";
             ss << "edgeType = " << etypes[static_cast<unsigned int>(edgeType)] << "\n";
             ss << "sigmoidType = " << stypes[static_cast<unsigned int>(sigmoidType)] << "\n";
+            ss << "sigmoidBasisSumType = " << sbstypes[static_cast<unsigned int>(sigmoidBasisSumType)] << "\n";
             ss << "basisNorm = " << (basisNorm ? "true" : "false") << "\n";
             ss << "posFuncType = " << pftypes[static_cast<unsigned int>(posFuncType)] << "\n";
             ss << "quadType = " << qtypes[static_cast<unsigned int>(quadType)] << "\n";
@@ -171,6 +178,7 @@ namespace mpart{
         inline static const std::string qtypes[3] = {"ClenshawCurtis", "AdaptiveSimpson", "AdaptiveClenshawCurtis"};
         inline static const std::string etypes[1] = {"SoftPlus"};
         inline static const std::string stypes[1] = {"Logistic"};
+        inline static const std::string sbstypes[2] = {"Linear", "Constant"};
     };
 };
 

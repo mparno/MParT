@@ -43,6 +43,8 @@ void SummarizedMapWrapper(pybind11::module &m);
 template<typename MemorySpace>
 void IdentityMapWrapper(pybind11::module &m);
 
+void Sigmoid1dWrapper(pybind11::module &m);
+
 // template<typename MemorySpace>
 // void DebugMapWrapper(pybind11::module &m);
 
