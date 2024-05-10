@@ -22,7 +22,6 @@ end
 methods
 
   function this = ConditionalMap(varargin)
-
     if(nargin==2)
         if(isstring(varargin{2}))
           if(varargin{2}=="id")
@@ -60,7 +59,19 @@ methods
         end
     elseif(nargin==3)
       if(isstring(varargin{3}) && varargin{3}=="Ab")
-        this.id_=MParT_('ConditionalMap_newAffineMapAb', varargin{1},varargin{2});
+        this.id_=MParT_('ConditionalMap_newAffineMapAb',varargin{1},varargin{2});
+      elseif(isa(varargin{1},'FixedMultiIndexSet'))
+        mset = varargin{1};
+        centers = varargin{2};
+        mexOptions = varargin{3}.getMexOptions;
+        input_str = ['MParT_(',char(39),'ConditionalMap_newSigmoidCompFromMset',char(39)];
+        input_str = [input_str,',mset.get_id(),centers'];
+        for o=1:length(mexOptions)
+          input_o=[',mexOptions{',num2str(o),'}'];
+          input_str=[input_str,input_o];
+        end
+        input_str=[input_str,')'];
+        this.id_ = eval(input_str);
       else
         error("Wrong input arguments");
       end
@@ -71,11 +82,7 @@ methods
       opts = varargin{4};
 
       mexOptions = opts.getMexOptions;
-      if isa(inputDim, 'FixedMultiIndexSet') % If the first arguments are multi-index sets, we call CreateSigmoidComponent from msets
-        fcn_name = 'SigmoidCompFromMsets'; % arguments (mset_offdiag, mset_diag, centers, opts)
-        inputDim = inputDim.get_id(); % Need to get the IDs, these are multi-index sets
-        outputDim = outputDim.get_id();
-      elseif numel(totalOrder)==1 % if totalOrder is a scalar, this is calling CreateTriangular
+      if numel(totalOrder)==1 % if totalOrder is a scalar, this is calling CreateTriangular
         fcn_name = 'TotalTriMap';
       else % otherwise, we call CreateSigmoidComponent, args (inputDim, totalOrder, centers, opts)
         fcn_name = 'SigmoidComp';
