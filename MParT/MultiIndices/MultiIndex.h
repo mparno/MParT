@@ -52,6 +52,11 @@ public:
         }
     }
 
+    /** Creates a new multiindex that is the concatenation of this multi with 
+        another multi.
+    */
+    MultiIndex Concatenate(MultiIndex const& otherMulti) const;
+
     /**
      * @brief Construct a new Multi Index object from a set of nonzero indices and values
      * 

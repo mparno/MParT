@@ -73,6 +73,53 @@ TEST_CASE( "Testing dimension sorting in the FixedMultiIndexSet class", "[FixedM
     
 }
 
+TEST_CASE( "Testing the FixedMultiIndexSet Cartesian function", "[FixedMultiIndexSet_Cartesian]" ) {
+
+    const unsigned int dim1 = 2;
+    const unsigned int maxOrder1 = 5;
+
+    const unsigned int dim2 = 2;
+    const unsigned int maxOrder2 = 3;
+
+    FixedMultiIndexSet<Kokkos::HostSpace> mset1(dim1, maxOrder1);
+    FixedMultiIndexSet<Kokkos::HostSpace> mset2(dim2, maxOrder2);
+    FixedMultiIndexSet<Kokkos::HostSpace> mset = mset1.Cartesian(mset2);
+
+    CHECK(mset.Size() == (mset1.Size()*mset2.Size()));
+
+}
+
+TEST_CASE( "Testing the FixedMultiIndexSet Concatenate function", "[FixedMultiIndexSet_Concatenate]" ) {
+
+    const unsigned int dim1 = 1;
+    const unsigned int maxOrder1 = 3;
+
+    const unsigned int dim2 = 1;
+    const unsigned int maxOrder2 = 5;
+
+    FixedMultiIndexSet<Kokkos::HostSpace> mset1(dim1, maxOrder1);
+    FixedMultiIndexSet<Kokkos::HostSpace> mset2(dim2, maxOrder2, maxOrder1+1);
+    
+    MultiIndexSet msetTrue = FixedMultiIndexSet<Kokkos::HostSpace>(dim2, maxOrder2).Unfix();
+    FixedMultiIndexSet<Kokkos::HostSpace> mset = mset1.Concatenate(mset2);
+    
+    CHECK(mset.Unfix() == msetTrue);
+}
+
+TEST_CASE( "Testing the MultiIndexSet Cartesian function", "[MultiIndexSet_Cartesian]" ) {
+
+    const unsigned int dim1 = 2;
+    const unsigned int dim2 = 3;
+    const unsigned int maxOrder = 3;
+
+    MultiIndexSet mset1 = MultiIndexSet::CreateTensorProduct(dim1, maxOrder);
+    MultiIndexSet mset2 = MultiIndexSet::CreateTensorProduct(dim2, maxOrder);
+    MultiIndexSet msetTrue = MultiIndexSet::CreateTensorProduct(dim1+dim2, maxOrder);
+    
+    MultiIndexSet mset = mset1.Cartesian(mset2);
+    REQUIRE(mset==msetTrue);
+}
+
 
 TEST_CASE("MultiIndexSet from Eigen", "[MultiIndexSetFromEigen]")
 {

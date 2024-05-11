@@ -75,7 +75,30 @@ MultiIndex::MultiIndex(Kokkos::View<unsigned int*, Kokkos::HostSpace> const& nzI
     }
 }
 
-std::vector<unsigned int>MultiIndex::Vector() const
+MultiIndex MultiIndex::Concatenate(MultiIndex const& otherMulti) const
+{
+    MultiIndex newMulti;
+    newMulti.length = length + otherMulti.length;
+    newMulti.maxValue = std::max(maxValue, otherMulti.maxValue);
+    newMulti.totalOrder = totalOrder + otherMulti.totalOrder;
+
+    unsigned int thisNumInds = nzInds.size();
+    unsigned int otherNumInds = otherMulti.nzInds.size();
+    newMulti.nzInds.resize(thisNumInds + otherNumInds);
+    newMulti.nzVals.resize(thisNumInds + otherNumInds);
+    for(unsigned int i=0; i<thisNumInds; ++i){
+        newMulti.nzInds.at(i) = nzInds.at(i);
+        newMulti.nzVals.at(i) = nzVals.at(i);
+    }
+    for(unsigned int i=0; i<otherNumInds; ++i){
+        newMulti.nzInds.at(i+thisNumInds) = otherMulti.nzInds.at(i)+length;
+        newMulti.nzVals.at(i+thisNumInds) = otherMulti.nzVals.at(i);
+    }
+
+    return newMulti;
+}
+
+std::vector<unsigned int> MultiIndex::Vector() const
 {
   std::vector<unsigned int> output(length,0);
 

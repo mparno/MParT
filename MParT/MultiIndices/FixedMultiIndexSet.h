@@ -45,10 +45,35 @@ public:
                        Kokkos::View<unsigned int*, MemorySpace> _nzDims,
                        Kokkos::View<unsigned int*, MemorySpace> _nzOrders);
     /*
-    Constructs a total order limited multiindex set
+    Constructs a total order limited multiindex set.
     */
-    FixedMultiIndexSet(unsigned int _dim,
-                       unsigned int _maxOrder);
+    FixedMultiIndexSet(unsigned int dim_,
+                       unsigned int maxOrder_,
+                       unsigned int minOrder_=0);
+
+    
+    /** @brief Constructs a new FixedMultiIndex set containing the cartesian product of 
+        this set and otherSet.
+
+        Consider two multiindex sets: \f$\mathcal{M}_1 \subset \mathbb{N}^{D_1}\f$ containing multiindices
+        of length \f$D_1\f$ and \f$\mathcal{M}_2 \subset \mathbb{N}^{D_2}\f$ containing multiindices of length 
+        \f$D_2\f$.  The Cartesian product defined by this function is the subset of \f$\mathbb{N}^{D_1+D_2} given by
+        \f[
+            \mathcal{M}_1 \bigtimes \mathcal{M}_2 = \{[\alpha_1,\alpha_2] \mid \quad \forall \alpha_1\in\mathcal{M}_1,\,\alpha_2\in\mathcal{M}_2 \},
+        \f]
+
+        This function can be more efficient than MultiIndexSet::Cartesian function when no limiter is used.
+    */
+    FixedMultiIndexSet<MemorySpace> Cartesian(FixedMultiIndexSet<MemorySpace> const& otherSet) const;
+
+    /** @brief Concatenates two sets with the same dimension assuming no duplicate terms exist.
+        
+        Returns a new multiindex set with a combination of all the terms in this set and all the 
+        terms in the other set.  This is equivalent to the union of the sets if no duplicate terms 
+        exist.  No checks for duplicates are performed in this function, so it is possible for the 
+        resulting FixedMultiIndexSet to have the same term more than once. 
+    */
+    FixedMultiIndexSet<MemorySpace> Concatenate(FixedMultiIndexSet<MemorySpace> const& otherSet) const;
 
     // Returns the maximum degree in the dimension dim
     Kokkos::View<const unsigned int*, MemorySpace> MaxDegrees() const;
@@ -131,11 +156,13 @@ private:
      * @brief
      *
      * @param maxOrder The maximum total order (sum of powers) to include in multiindex set.
+     * @param minOrder The minimum total order (inclusive) to include in the the multiindex set.  Can be used to construct nonoverlapping sets.
      * @param currDim The "top" dimension currently being filled in recursive calls to this function.  Starts at 0.
      * @param currNz The current index into the nzDims and nzOrders arrays.
      */
     void FillTotalOrder(unsigned int maxOrder,
-                        std::vector<unsigned int> &workspace,
+                        unsigned int minOrder,
+                        Kokkos::View<unsigned int*, MemorySpace> workspace,
                         unsigned int currDim,
                         unsigned int &currTerm,
                         unsigned int &currNz);

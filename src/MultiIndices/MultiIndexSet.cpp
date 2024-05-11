@@ -209,6 +209,21 @@ void MultiIndexSet::SetLimiter(LimiterType const& newLimiter){
 
 }
 
+MultiIndexSet MultiIndexSet::Cartesian(MultiIndexSet const& otherSet,
+                                       LimiterType   const& limiter) const
+{   
+    MultiIndexSet newSet = MultiIndexSet(Length() + otherSet.Length());
+    for(unsigned int i=0; i<Size(); ++i){
+        for(unsigned int j=0; j<otherSet.Size(); ++j){
+            MultiIndex newMulti = IndexToMulti(i).Concatenate(otherSet.IndexToMulti(j));
+            if(limiter(newMulti)){
+                newSet += newMulti;
+            }
+        }
+    }
+    return newSet;
+}
+
 int MultiIndexSet::MultiToIndex(MultiIndex const& input) const{
 
   auto localIter = multi2global.find(input);
@@ -270,6 +285,25 @@ int MultiIndexSet::AddInactive(MultiIndex const& newNode)
   }else{
     return -1;
   }
+}
+
+
+bool MultiIndexSet::operator==(const MultiIndexSet &b) const
+{   
+    if(Size()!=b.Size())
+        return false;
+    if(Length()!=b.Length())
+        return false;
+    
+    for(int i=0; i<Size(); ++i){
+        if(!b.IsActive(at(i)))
+            return false;
+    }
+    for(int i=0; i<b.Size(); ++i){
+        if(!IsActive(b.at(i)))
+            return false;
+    }
+    return true;
 }
 
 bool MultiIndexSet::IsActive(MultiIndex const& multiIndex) const
