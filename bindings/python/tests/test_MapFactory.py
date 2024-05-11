@@ -123,10 +123,9 @@ def test_CreateSigmoidMaps():
     sig = mpart.CreateSigmoidComponent(input_dim, max_degree, centers, opts)
     expected_num_coeffs = math.comb(input_dim+max_degree, input_dim)
     assert sig.numCoeffs == expected_num_coeffs
-    mset_diag = mpart.MultiIndexSet.CreateNonzeroDiagTotalOrder(input_dim, max_degree).fix(True)
-    mset_off = mpart.FixedMultiIndexSet(input_dim-1, max_degree)
-    sig_mset = mpart.CreateSigmoidComponent(mset_off, mset_diag, centers, opts)
-    assert sig_mset.numCoeffs == mset_diag.Size() + mset_off.Size()
+    mset = mpart.FixedMultiIndexSet(input_dim, max_degree)
+    sig_mset = mpart.CreateSigmoidComponent(mset, centers, opts)
+    assert sig_mset.numCoeffs == mset.Size()
     output_dim = input_dim
     centers_total = np.column_stack([centers for _ in range(output_dim)])
     sig_trimap = mpart.CreateSigmoidTriangular(input_dim, output_dim, max_degree, centers_total, opts)

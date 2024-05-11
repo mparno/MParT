@@ -260,15 +260,14 @@ TEST_CASE( "Testing factory method for Sigmoid Component", "[MapFactorySigmoidCo
         }
     }
     SECTION("Create Sigmoid Component from fixed msets") {
-        FixedMultiIndexSet<MemorySpace> mset_offdiag(inputDim-1, maxDegree);
         // Make some arbitrary limiter
         auto limiter = [maxDegree](MultiIndex const& index){
             return index.Get(index.Length()-1) != 0 && index.Sum() == maxDegree;
         };
-        FixedMultiIndexSet<MemorySpace> mset_diag = MultiIndexSet::CreateTotalOrder(inputDim, maxDegree, limiter).Fix(true);
-        std::shared_ptr<ConditionalMapBase<MemorySpace>> map = MapFactory::CreateSigmoidComponent<MemorySpace>(mset_offdiag, mset_diag, centers, options);
+        FixedMultiIndexSet<MemorySpace> mset= MultiIndexSet::CreateTotalOrder(inputDim, maxDegree, limiter).Fix(true);
+        std::shared_ptr<ConditionalMapBase<MemorySpace>> map = MapFactory::CreateSigmoidComponent<MemorySpace>(mset, centers, options);
         REQUIRE(map != nullptr);
-        REQUIRE(map->numCoeffs == mset_diag.Size()+mset_offdiag.Size());
+        REQUIRE(map->numCoeffs == mset.Size());
     }
     SECTION("Create Triangular Sigmoid Map From Components") {
         std::vector<std::shared_ptr<ConditionalMapBase<MemorySpace>>> maps;
