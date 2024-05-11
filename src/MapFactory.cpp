@@ -288,6 +288,7 @@ std::shared_ptr<ConditionalMapBase<MemorySpace>> CreateSigmoidExpansionTemplate(
 template <typename MemorySpace, typename OffdiagEval, typename Rectifier, typename SigmoidType, typename EdgeType>
 std::shared_ptr<ConditionalMapBase<MemorySpace>> CreateSigmoidExpansionTemplate(unsigned int inputDim, 
                                                                                 unsigned int totalOrder, 
+                                                                                unsigned int crossOrder,
                                                                                 StridedVector<double, MemorySpace> centers, 
                                                                                 double edgeWidth,
                                                                                 SigmoidSumSizeType sumType)
@@ -301,8 +302,19 @@ std::shared_ptr<ConditionalMapBase<MemorySpace>> CreateSigmoidExpansionTemplate(
         return CreateSigmoidExpansionTemplate<MemorySpace, OffdiagEval, Rectifier, SigmoidType, EdgeType>(
             fmset_d, centers, edgeWidth, sumType);
     }
-    FixedMultiIndexSet<Kokkos::HostSpace> fmset_h {inputDim, totalOrder};
 
+    // Build multiindex with off diagonal terms
+    FixedMultiIndexSet<Kokkos::HostSpace> moff1(inputDim-1, totalOrder);
+    FixedMultiIndexSet<Kokkos::HostSpace> mdiag1(1, 0);
+    FixedMultiIndexSet<Kokkos::HostSpace> m1 = moff1.Cartesian(mdiag1);
+
+    // Create terms that mix sigmoid and off diagonal terms
+    FixedMultiIndexSet<Kokkos::HostSpace> moff2(inputDim-1, crossOrder);
+    FixedMultiIndexSet<Kokkos::HostSpace> mdiag2(1, numSigmoids+3, 1); // Do not include "order 0" sigmoid (i.e., constant) because that's already in m1
+    FixedMultiIndexSet<Kokkos::HostSpace> m2 = moff1.Cartesian(mdiag1);
+    
+    // Concatenate the off-diagonal only and mixed terms
+    FixedMultiIndexSet<Kokkos::HostSpace> fmset_h = m1.Concatenate(m2);
 
     FixedMultiIndexSet<MemorySpace> fmset_d = fmset_h.ToDevice<MemorySpace>();
     return CreateSigmoidExpansionTemplate<MemorySpace, OffdiagEval, Rectifier, SigmoidType, EdgeType>(
@@ -340,19 +352,34 @@ void HandleSigmoidComponentErrors(MapOptions const& opts) {
 
 template<typename MemorySpace>
 std::shared_ptr<ConditionalMapBase<MemorySpace>> MapFactory::CreateSigmoidComponent(
-    unsigned int inputDim, unsigned int totalOrder, StridedVector<const double, MemorySpace> centers, MapOptions opts) {
+            unsigned int inputDim, 
+            unsigned int offDiagOrder, 
+            unsigned int crossOrder,
+            StridedVector<const double, MemorySpace> centers, 
+            MapOptions opts) 
+{
     HandleSigmoidComponentErrors<MemorySpace>(opts);
     Kokkos::View<double*, MemorySpace> centers_copy("Centers Copy", centers.size());
     Kokkos::deep_copy(centers_copy, centers);
     // Dispatch to the correct sigmoid expansion template
     if(opts.posFuncType == PosFuncTypes::Exp) {
-        return CreateSigmoidExpansionTemplate<MemorySpace, HermiteFunction, Exp, SigmoidTypeSpace::Logistic, SoftPlus>(inputDim, totalOrder, centers_copy, opts.edgeShape, opts.sigmoidBasisSumType);
+        return CreateSigmoidExpansionTemplate<MemorySpace, HermiteFunction, Exp, SigmoidTypeSpace::Logistic, SoftPlus>(inputDim, offDiagOrder, crossOrder, centers_copy, opts.edgeShape, opts.sigmoidBasisSumType);
     } else if(opts.posFuncType == PosFuncTypes::SoftPlus) {
-        return CreateSigmoidExpansionTemplate<MemorySpace, HermiteFunction, SoftPlus, SigmoidTypeSpace::Logistic, SoftPlus>(inputDim, totalOrder, centers_copy, opts.edgeShape, opts.sigmoidBasisSumType);
+        return CreateSigmoidExpansionTemplate<MemorySpace, HermiteFunction, SoftPlus, SigmoidTypeSpace::Logistic, SoftPlus>(inputDim, offDiagOrder, crossOrder, centers_copy, opts.edgeShape, opts.sigmoidBasisSumType);
     }
     else {
         return nullptr;
     }
+}
+
+template<typename MemorySpace>
+std::shared_ptr<ConditionalMapBase<MemorySpace>> MapFactory::CreateSigmoidComponent(
+            unsigned int inputDim, 
+            unsigned int totalOrder,
+            StridedVector<const double, MemorySpace> centers, 
+            MapOptions opts) 
+{
+    return MapFactory::CreateSigmoidComponent(inputDim, totalOrder, totalOrder, centers, opts);
 }
 
 template<typename MemorySpace>
