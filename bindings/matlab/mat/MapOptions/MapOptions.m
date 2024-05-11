@@ -2,6 +2,7 @@ classdef MapOptions
     properties (Access = public)
         basisType = BasisTypes.ProbabilistHermite;
         sigmoidType = SigmoidTypes.Logistic;
+        sigmoidBasisSumType = SigmoidSumSizeType.Linear;
         edgeType = EdgeTypes.SoftPlus;
         posFuncType = PosFuncTypes.SoftPlus;
         quadType = QuadTypes.AdaptiveSimpson;
@@ -36,6 +37,9 @@ classdef MapOptions
         end
         function obj = set.sigmoidType(obj,type)
             obj.sigmoidType = type;
+        end
+        function obj = set.sigmoidBasisSumType(obj,type)
+            obj.sigmoidBasisSumType = type;
         end
         function obj = set.edgeShape(obj,value)
             obj.edgeShape = value;
@@ -84,6 +88,7 @@ classdef MapOptions
             optionsArray{14} = obj.basisUB;
             optionsArray{15} = obj.basisNorm;
             optionsArray{16} = obj.nugget;
+            optionsArray{17} = obj.sigmoidBasisSumType;
         end
 
         function res = eq(obj1, obj2)
@@ -94,6 +99,7 @@ classdef MapOptions
             res = res && isequal(obj1.basisNorm,   obj2.basisNorm);
             res = res && isequal(obj1.posFuncType, obj2.posFuncType);
             res = res && isequal(obj1.sigmoidType, obj2.sigmoidType);
+            res = res && isequal(obj1.sigmoidBasisSumType, obj2.sigmoidBasisSumType);
             res = res && isequal(obj1.edgeType,    obj2.edgeType);
             res = res && isequal(obj1.edgeShape,   obj2.edgeShape);
             res = res && isequal(obj1.quadType,    obj2.quadType);
@@ -110,7 +116,8 @@ classdef MapOptions
             MParT_('MapOptions_Serialize',filename, char(obj.basisType),  ...
             char(obj.sigmoidType), char(obj.edgeType), char(obj.posFuncType), char(obj.quadType), ...
              obj.quadAbsTol, obj.quadRelTol, obj.quadMaxSub, obj.quadMinSub, obj.edgeShape, ...
-             obj.quadPts, obj.contDeriv, obj.basisLB, obj.basisUB, obj.basisNorm, obj.nugget)
+             obj.quadPts, obj.contDeriv, obj.basisLB, obj.basisUB, obj.basisNorm, obj.nugget,
+             char(obj.sigmoidBasisSumType))
         end
 
         function obj = Deserialize(obj,filename)
@@ -143,6 +150,7 @@ classdef MapOptions
             obj.basisUB      = optionsArray{14};
             obj.basisNorm    = optionsArray{15};
             obj.nugget       = optionsArray{16};
+            obj.sigmoidBasisSumType = optionsArray{17};
         end
     end
 
