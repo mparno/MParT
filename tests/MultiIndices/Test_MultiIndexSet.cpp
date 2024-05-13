@@ -86,7 +86,7 @@ TEST_CASE( "Testing the FixedMultiIndexSet Cartesian function", "[FixedMultiInde
     FixedMultiIndexSet<Kokkos::HostSpace> mset = mset1.Cartesian(mset2);
 
     CHECK(mset.Size() == (mset1.Size()*mset2.Size()));
-
+    CHECK(mset.Unfix() == mset1.Unfix().Cartesian(mset2.Unfix()));
 }
 
 TEST_CASE( "Testing the FixedMultiIndexSet Concatenate function", "[FixedMultiIndexSet_Concatenate]" ) {

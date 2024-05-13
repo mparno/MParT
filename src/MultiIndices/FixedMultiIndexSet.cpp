@@ -360,6 +360,7 @@ FixedMultiIndexSet<MemorySpace> FixedMultiIndexSet<MemorySpace>::Cartesian(Fixed
     unsigned int thisSize = Size();
     unsigned int otherSize = otherSet.Size();
     unsigned int newNumTerms = thisSize * otherSize;
+    unsigned int thisLength = Length();
 
     Kokkos::View<unsigned int*, MemorySpace> newStarts("nzStarts", newNumTerms+1);
     Kokkos::View<unsigned int*, MemorySpace> newDims("nzDims", otherSize*nzDims.size() + thisSize*otherSet.nzDims.size());
@@ -384,7 +385,7 @@ FixedMultiIndexSet<MemorySpace> FixedMultiIndexSet<MemorySpace>::Cartesian(Fixed
                 }
                 // Copy the multiindex from otherSet
                 for(unsigned int k=0; k<otherNumNz; ++k){
-                    newDims(newStarts(i*otherSize + j) + thisNumNz + k) = otherSet.nzDims(otherSet.nzStarts(j)+k);
+                    newDims(newStarts(i*otherSize + j) + thisNumNz + k) = thisLength + otherSet.nzDims(otherSet.nzStarts(j)+k);
                     newOrders(newStarts(i*otherSize + j) + thisNumNz + k) = otherSet.nzOrders(otherSet.nzStarts(j)+k);
                 }
 

@@ -70,7 +70,7 @@ namespace mpart{
         double edgeShape = 1.5;
 
         /** How arrays of centers should be interpreted in sigmoid basis functions. */
-        SigmoidSumSizeType sigmoidBasisSumType;
+        SigmoidSumSizeType sigmoidBasisSumType = SigmoidSumSizeType::Linear;
 
         /** Linearization bounds for the 1d basis function. The basis function is linearized outside [lb,ub] */
         double basisLB = -std::numeric_limits<double>::infinity();
