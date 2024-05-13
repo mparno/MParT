@@ -41,7 +41,7 @@ classdef SigmoidTest < matlab.unittest.TestCase
             opts = MapOptions;
             opts.basisType = BasisTypes.HermiteFunctions;
             comp = CreateSigmoidTriangular(input_dim, output_dim, max_order, centers_total, opts);
-            expected_coeffs = sum(arrayfun(@(d) (num_sigmoids+4)*nchoosek(d-1+max_order, input_dim-1), (input_dim-output_dim+1):input_dim));
+            expected_coeffs = sum(arrayfun(@(d) (num_sigmoids+4)*nchoosek(d-1+max_order, d-1), (input_dim-output_dim+1):input_dim));
             testCase.verifyEqual( comp.numCoeffs, uint32(expected_coeffs) );
         end
     end
