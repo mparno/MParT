@@ -121,7 +121,6 @@ def test_CreateSigmoidMaps():
     opts = mpart.MapOptions()
     opts.basisType = mpart.BasisTypes.HermiteFunctions
     sig = mpart.CreateSigmoidComponent(input_dim, max_degree, centers, opts)
-
     expected_num_coeffs = (num_sigmoid+4)* math.comb(input_dim-1+max_degree, input_dim-1)
     assert sig.numCoeffs == expected_num_coeffs
     mset = mpart.FixedMultiIndexSet(input_dim, max_degree)
