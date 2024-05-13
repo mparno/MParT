@@ -61,7 +61,7 @@ enum class SigmoidSumSizeType {
    \begin{aligned}
     f_0(x) & = 1 \\
     f_1(x) & = x \\
-    f_2(x) & = w_0 g(-b_0(x-c_0))\\
+    f_2(x) & = -w_0 g(-b_0(x-c_0))\\
     f_3(x) & = w_1 g(b_1(x-c_1)) \\
     f_k(x) & = \sum_{j=1}^{N_k} w_{kj} s( b_{kj}(x-c_{kj}))
     \end{aligned}

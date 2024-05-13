@@ -104,7 +104,7 @@ MultiIndexSet set(length, limiter);
       in the product set or not.  Here, this indicator function is defined through the limiter function
   */
   MultiIndexSet Cartesian(MultiIndexSet const& otherSet,
-                          LimiterType   const& limiter = [](MultiIndex const&){return true;}) const;
+                          LimiterType   const& limiter = MultiIndexLimiter::None()) const;
 
   /** Set the limiter of this MultiIndexSet.  This function will check to make
       sure that all currently active nodes are still feasible with the new limiter.

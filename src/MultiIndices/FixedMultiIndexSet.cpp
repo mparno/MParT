@@ -222,10 +222,8 @@ FixedMultiIndexSet<MemorySpace>::FixedMultiIndexSet(unsigned int dim,
     // Put in a parallel for loop of length 1 to make sure it's executed on device
     Kokkos::View<unsigned int*, MemorySpace> workspace("workspace", dim);
     unsigned int newNumTerms = 0;
-    Kokkos::parallel_reduce("Dummy Loop", 1, KOKKOS_LAMBDA (const int blahind, unsigned int& currTerm) {
-        unsigned int currNz=0;
-        FillTotalOrder(maxOrder, minOrder, workspace, 0, currTerm, currNz);
-    }, newNumTerms);
+    unsigned int currNz=0;
+    FillTotalOrder(maxOrder, minOrder, workspace, 0, newNumTerms, currNz);
     
     Kokkos::resize(nzStarts, newNumTerms+1);
     Kokkos::resize(nzDims, nzStarts(newNumTerms));
