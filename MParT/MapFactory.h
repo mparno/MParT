@@ -131,7 +131,7 @@ namespace mpart{
          * @param inputDim Dimension of the input space to component
          * @param offDiagOrder Maximum value of sum(alpha_{1:n-1}) when alpha_n=0. i.e., the total order of terms in the multiindex set that only contain nonzero values for off diagonal inputs.
          * @param crossOrder Maximum value of sum(alpha_{1:n-1}) terms when alpha_n>0. This parameter controls the complexity of interactions between off-diagonal components and the diagonal component.
-         * @param centers Set of centers of the sigmoids. Should be length 2 + (1 + 2 + ... + p) where p is the default total order.
+         * @param centers Set of centers of the sigmoids. Should be length \f$2 + (k_1 + k_2 + ... + k_L)\f$ where \f$L\f$ is the maximum order of the map component in the last input.
          * @param opts 
          * @return std::shared_ptr<ConditionalMapBase<MemorySpace>> 
          */
