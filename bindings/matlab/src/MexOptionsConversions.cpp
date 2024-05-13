@@ -5,9 +5,9 @@ using namespace mpart;
 
 MapOptions MapOptionsFromMatlabArgs(
     std::string basisType, std::string sigmoidType,
-    std::string edgeType, std::string posFuncType,
-    std::string quadType, double quadAbsTol,
-    double quadRelTol, unsigned int quadMaxSub,
+    std::string edgeType, std::string sigmoidBasisSumType,
+    std::string posFuncType, std::string quadType,
+    double quadAbsTol, double quadRelTol, unsigned int quadMaxSub,
     unsigned int quadMinSub, double edgeShape,
     unsigned int quadPts, bool contDeriv, double basisLB,
     double basisUB, bool basisNorm, double nugget)
@@ -48,6 +48,14 @@ MapOptions MapOptionsFromMatlabArgs(
     std::cout << "Unknown sigmoidType, value is set to default" <<std::endl;
     }
 
+    if (sigmoidBasisSumType == "Linear") {
+        opts.sigmoidBasisSumType    = SigmoidSumSizeType::Linear;
+    } else if (sigmoidBasisSumType == "Constant") {
+        opts.sigmoidBasisSumType    = SigmoidSumSizeType::Constant;
+    } else {
+        std::cout << "Unknown sigmoidBasisSumType, value is set to default" <<std::endl;
+    }
+
     if (edgeType == "SoftPlus") {
     opts.edgeType    = EdgeTypes::SoftPlus;
     } else {
@@ -73,12 +81,13 @@ MapOptions mpart::binding::MapOptionsFromMatlab(mexplus::InputArguments &input, 
     return MapOptionsFromMatlabArgs(
         input.get<std::string>(start + 0), input.get<std::string>(start + 1),
         input.get<std::string>(start + 2), input.get<std::string>(start + 3),
-        input.get<std::string>(start + 4), input.get<double>(start + 5),
-        input.get<double>(start + 6), input.get<unsigned int>(start + 7),
-        input.get<unsigned int>(start + 8), input.get<double>(start + 9),
-        input.get<unsigned int>(start + 10), input.get<bool>(start + 11),
-        input.get<double>(start + 12), input.get<double>(start + 13),
-        input.get<bool>(start + 14), input.get<double>(start + 15)
+        input.get<std::string>(start + 4), input.get<std::string>(start + 5),
+        input.get<double>(start + 6), input.get<double>(start + 7),
+        input.get<unsigned int>(start + 8), input.get<unsigned int>(start + 9),
+        input.get<double>(start + 10), input.get<unsigned int>(start + 11),
+        input.get<bool>(start + 12), input.get<double>(start + 13),
+        input.get<double>(start + 14), input.get<bool>(start + 15),
+        input.get<double>(start + 16)
     );
 }
 
@@ -88,9 +97,11 @@ void mpart::binding::MapOptionsToMatlab(MapOptions opts, mexplus::OutputArgument
     output.set(i++, MapOptions::btypes[static_cast<unsigned int>(opts.basisType)]); // basisType
     output.set(i++, MapOptions::stypes[static_cast<unsigned int>(opts.sigmoidType)]); // sigmoidType
     output.set(i++, MapOptions::etypes[static_cast<unsigned int>(opts.edgeType)]); // edgeType
+    output.set(i++, MapOptions::sbstypes[static_cast<unsigned int>(opts.sigmoidBasisSumType)]); // sigmoidBasisSumType
     output.set(i++, MapOptions::pftypes[static_cast<unsigned int>(opts.posFuncType)]); // posFuncType
     output.set(i++, MapOptions::qtypes[static_cast<unsigned int>(opts.quadType)]); // quadType
-    
+
+    // Change if more scalars
     constexpr int numScalars = 10;
     // bools describe which are integers
     const std::pair<double,bool> optsScalars[numScalars] = {

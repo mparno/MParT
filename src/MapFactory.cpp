@@ -184,10 +184,6 @@ Sigmoid1d<MemorySpace, SigmoidType, EdgeType> CreateSigmoid(unsigned int inputDi
                                                             double edgeShape,
                                                             SigmoidSumSizeType sumType) 
 {
-    //Kokkos::View<double*, MemorySpace> widths("Sigmoid Widths", centers.size());
-    //Kokkos::View<double*, MemorySpace> weights("Sigmoid Weights", centers.size());
-
-
     int numSigmoids = Sigmoid1d<MemorySpace, SigmoidType, EdgeType>::ComputeNumSigmoids(centers.size(), sumType);
     
     // Fill vectors on host and then copy to device if necessary
