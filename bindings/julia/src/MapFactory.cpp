@@ -13,6 +13,11 @@ void mpart::binding::MapFactoryWrapper(jlcxx::Module &mod) {
     mod.method("CreateTriangular", &MapFactory::CreateTriangular<MemorySpace>);
 
     // CreateSigmoidComponent
+    mod.method("CreateSigmoidComponent", [](unsigned int inDim, unsigned int offDiagOrder, unsigned int crossOrder, jlcxx::ArrayRef<double,1> centers, MapOptions opts){
+        StridedVector<const double, MemorySpace> centersVec = JuliaToKokkos(centers);
+        return MapFactory::CreateSigmoidComponent<Kokkos::HostSpace>(inDim, offDiagOrder, crossOrder, centersVec, opts);
+    });
+
     mod.method("CreateSigmoidComponent", [](unsigned int inDim, unsigned int totalOrder, jlcxx::ArrayRef<double,1> centers, MapOptions opts){
         StridedVector<const double, MemorySpace> centersVec = JuliaToKokkos(centers);
         return MapFactory::CreateSigmoidComponent<Kokkos::HostSpace>(inDim, totalOrder, centersVec, opts);

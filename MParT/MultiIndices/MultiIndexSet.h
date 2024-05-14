@@ -93,6 +93,19 @@ MultiIndexSet set(length, limiter);
    */
   FixedMultiIndexSet<Kokkos::HostSpace> Fix(bool compress=true) const;
 
+  /** Constructs a new MultiIndexSet containing the outer (tensor) product of this set with another.
+      Consider two multiindex sets: \f$\mathcal{M}_1 \subset \mathbb{N}^{D_1}\f$ containing multiindices
+      of length \f$D_1\f$ and \f$\mathcal{M}_2 \subset \mathbb{N}^{D_2}\f$ containing multiindices of length 
+      \f$D_2\f$.  The filtered Cartesian product defined by this function is given by
+      \f[
+        \mathcal{M}_1 \bigtimes \mathcal{M}_2 = \{[\alpha_1,\alpha_2] \mid \quad \forall \alpha_1\in\mathcal{M}_1,\,\alpha_2\in\mathcal{M}_2 \text{ and } F([\alpha_1,\alpha_2])=1\},
+      \f]
+      where \f$F([\alpha_1,\alpha_2])\f$ is and indicator of whether the term should ultimately be included 
+      in the product set or not.  Here, this indicator function is defined through the limiter function
+  */
+  MultiIndexSet Cartesian(MultiIndexSet const& otherSet,
+                          LimiterType   const& limiter = MultiIndexLimiter::None()) const;
+
   /** Set the limiter of this MultiIndexSet.  This function will check to make
       sure that all currently active nodes are still feasible with the new limiter.
       If this is not the case, an assert will be thrown.
@@ -151,6 +164,10 @@ MultiIndexSet set(length, limiter);
     @return An unsigned integer with the number of active MultiIndices in the set.
     */
   unsigned int Size() const{return active2global.size();};
+
+  /** Check to see if sets have the same active terms.
+  */
+  bool operator==(const MultiIndexSet &b) const;
 
   // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
   // * * * ADAPTIVE COMPONENTS

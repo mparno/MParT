@@ -5,6 +5,9 @@
 #include "MParT/Utilities/KokkosSpaceMappings.h"
 #include "MParT/Utilities/GPUtils.h"
 
+
+#include "MParT/Utilities/Miscellaneous.h"
+#include <sstream>
 #include <stdio.h>
 
 using namespace mpart;
@@ -204,7 +207,8 @@ FixedMultiIndexSet<MemorySpace>::FixedMultiIndexSet(unsigned int                
 
 template<typename MemorySpace>
 FixedMultiIndexSet<MemorySpace>::FixedMultiIndexSet(unsigned int dim,
-                                                    unsigned int maxOrder) : dim(dim), isCompressed(true)
+                                                    unsigned int maxOrder,
+                                                    unsigned int minOrder) : dim(dim), isCompressed(true)
 {
     // Figure out the number of terms in the total order
     unsigned int numTerms, numNz;
@@ -212,16 +216,19 @@ FixedMultiIndexSet<MemorySpace>::FixedMultiIndexSet(unsigned int dim,
 
     // Allocate space for the multis in compressed form
     nzStarts = Kokkos::View<unsigned int*, MemorySpace>("nzStarts", numTerms+1);
-    nzDims   = Kokkos::View<unsigned int*, MemorySpace>("nzDims", numNz);
+    nzDims = Kokkos::View<unsigned int*, MemorySpace>("nzDims", numNz);
     nzOrders = Kokkos::View<unsigned int*, MemorySpace>("nzOrders", numNz);
 
-    // Compute the multis
-    std::vector<unsigned int> workspace(dim);
+    // Put in a parallel for loop of length 1 to make sure it's executed on device
+    Kokkos::View<unsigned int*, MemorySpace> workspace("workspace", dim);
+    unsigned int newNumTerms = 0;
     unsigned int currNz=0;
-    unsigned int currTerm=0;
-
-    FillTotalOrder(maxOrder, workspace, 0, currTerm, currNz);
-
+    FillTotalOrder(maxOrder, minOrder, workspace, 0, newNumTerms, currNz);
+    
+    Kokkos::resize(nzStarts, newNumTerms+1);
+    Kokkos::resize(nzDims, nzStarts(newNumTerms));
+    Kokkos::resize(nzOrders, nzStarts(newNumTerms));
+   
     CalculateMaxDegrees();
 }
 
@@ -346,6 +353,83 @@ int FixedMultiIndexSet<MemorySpace>::MultiToIndex(std::vector<unsigned int> cons
 }
 
 template<typename MemorySpace>
+FixedMultiIndexSet<MemorySpace> FixedMultiIndexSet<MemorySpace>::Cartesian(FixedMultiIndexSet<MemorySpace> const& otherSet) const
+{      
+    unsigned int thisSize = Size();
+    unsigned int otherSize = otherSet.Size();
+    unsigned int newNumTerms = thisSize * otherSize;
+    unsigned int thisLength = Length();
+
+    Kokkos::View<unsigned int*, MemorySpace> newStarts("nzStarts", newNumTerms+1);
+    Kokkos::View<unsigned int*, MemorySpace> newDims("nzDims", otherSize*nzDims.size() + thisSize*otherSet.nzDims.size());
+    Kokkos::View<unsigned int*, MemorySpace> newOrders("nzOrders", otherSize*nzOrders.size() + thisSize*otherSet.nzOrders.size());
+
+    Kokkos::parallel_for("Dummy Loop", 1, KOKKOS_LAMBDA (const int blahind) {
+        
+        unsigned int currStart = 0;
+        unsigned int thisNumNz, otherNumNz;
+
+        for(unsigned int i=0; i<thisSize; ++i){
+            thisNumNz = nzStarts(i+1)-nzStarts(i);
+
+            for(unsigned int j=0; j<otherSize; ++j){
+                newStarts(i*otherSize + j) = currStart;
+                otherNumNz = otherSet.nzStarts(j+1)-otherSet.nzStarts(j);
+
+                // Copy the multiindex from *this
+                for(unsigned int k=0; k<thisNumNz; ++k){
+                    newDims(newStarts(i*otherSize + j) + k) = nzDims(nzStarts(i)+k);
+                    newOrders(newStarts(i*otherSize + j) + k) = nzOrders(nzStarts(i)+k);
+                }
+                // Copy the multiindex from otherSet
+                for(unsigned int k=0; k<otherNumNz; ++k){
+                    newDims(newStarts(i*otherSize + j) + thisNumNz + k) = thisLength + otherSet.nzDims(otherSet.nzStarts(j)+k);
+                    newOrders(newStarts(i*otherSize + j) + thisNumNz + k) = otherSet.nzOrders(otherSet.nzStarts(j)+k);
+                }
+
+                currStart += thisNumNz + otherNumNz;
+            }
+        }
+        newStarts(newNumTerms) = currStart;
+    });
+    return FixedMultiIndexSet<MemorySpace>(Length()+otherSet.Length(), newStarts, newDims, newOrders);
+}
+
+template<typename MemorySpace>
+FixedMultiIndexSet<MemorySpace> FixedMultiIndexSet<MemorySpace>::Concatenate(FixedMultiIndexSet<MemorySpace> const& otherSet) const
+{
+    if(Length() != otherSet.Length()){
+        std::stringstream ss;
+        ss << "Length of multiindices must be the same but first set has length " << Length() << " multis and second set has length " << otherSet.Length() << " multis.";
+        ProcAgnosticError<std::invalid_argument>(ss.str().c_str());
+    }
+    
+    unsigned int thisSize = Size();
+    unsigned int thisNumNz = nzDims.size();
+    unsigned int otherSize = otherSet.Size();
+    Kokkos::View<unsigned int*, MemorySpace> newStarts("nzStarts", thisSize + otherSize + 1);
+    Kokkos::View<unsigned int*, MemorySpace> newDims("nzDims", nzDims.size() + otherSet.nzDims.size());
+    Kokkos::View<unsigned int*, MemorySpace> newOrders("nzOrders", nzOrders.size() + otherSet.nzOrders.size());
+    
+    Kokkos::deep_copy(Kokkos::subview(newDims,std::pair<int,int>(0,nzDims.size())), nzDims);
+    Kokkos::deep_copy(Kokkos::subview(newDims,std::pair<int,int>(nzDims.size(),newDims.size())), otherSet.nzDims);
+    Kokkos::deep_copy(Kokkos::subview(newOrders,std::pair<int,int>(0,nzOrders.size())), nzOrders);
+    Kokkos::deep_copy(Kokkos::subview(newOrders,std::pair<int,int>(nzOrders.size(),newOrders.size())), otherSet.nzOrders);
+
+    // Starts stemming from this set
+    Kokkos::deep_copy(Kokkos::subview(newStarts,std::pair<int,int>(0,thisSize+1)), nzStarts);
+
+    //  Starts stemming from other set
+    Kokkos::View<unsigned int*, MemorySpace> otherStarts = otherSet.nzStarts;
+    Kokkos::parallel_for("Other Starts", otherSize+1, KOKKOS_LAMBDA (const int i) {
+        newStarts(thisSize+i) = thisNumNz + otherStarts(i);
+    });
+    
+    return FixedMultiIndexSet<MemorySpace>(Length(), newStarts, newDims, newOrders);
+}
+
+
+template<typename MemorySpace>
 MultiIndexSet FixedMultiIndexSet<MemorySpace>::Unfix() const
 {
     if(!isCompressed)
@@ -420,33 +504,40 @@ std::pair<unsigned int, unsigned int> FixedMultiIndexSet<MemorySpace>::TotalOrde
 
 template<typename MemorySpace>
 void FixedMultiIndexSet<MemorySpace>::FillTotalOrder(unsigned int maxOrder,
-                                        std::vector<unsigned int> &workspace,
-                                        unsigned int currDim,
-                                        unsigned int &currTerm,
-                                        unsigned int &currNz)
+                                                     unsigned int minOrder,
+                                                     Kokkos::View<unsigned int*, MemorySpace> workspace,
+                                                     unsigned int currDim,
+                                                     unsigned int &currTerm,
+                                                     unsigned int &currNz)
 {
 
     if(currDim<dim-1) {
         for(unsigned int pow=0; pow<=maxOrder; ++pow){
             workspace[currDim] = pow;
-            FillTotalOrder(maxOrder-pow, workspace, currDim+1, currTerm, currNz);
+            FillTotalOrder(maxOrder-pow, minOrder, workspace, currDim+1, currTerm, currNz);
         }
     }else{
 
         for(unsigned int pow=0; pow<=maxOrder; ++pow){
             workspace[currDim] = pow;
 
-            // Copy the multiindex into the compressed format
-            nzStarts(currTerm) = currNz;
-            for(unsigned int i=0; i<dim; ++i){
-                if(workspace[i]>0){
-                    nzDims(currNz) = i;
-                    nzOrders(currNz) = workspace[i];
-                    currNz++;
-                }
-            }
+            // Figure out the total order of the workspace
+            unsigned int currOrder = 0;
+            for(unsigned int i=0; i<currDim+1; ++i)
+                currOrder += workspace[i];
 
-            currTerm++;
+            if(currOrder>=minOrder){
+                // Copy the multiindex into the compressed format
+                nzStarts(currTerm) = currNz;
+                for(unsigned int i=0; i<dim; ++i){
+                    if(workspace[i]>0){
+                        nzDims(currNz) = i;
+                        nzOrders(currNz) = workspace[i];
+                        currNz++;
+                    }
+                }
+                currTerm++;
+            }
         }
 
     }

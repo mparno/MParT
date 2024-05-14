@@ -111,6 +111,24 @@ TEST_CASE("Multiindex from Eigen", "[MultiIndexFromEigen]")
     CHECK(a.Get(2) == multi(2));
 }
 
+TEST_CASE("Multiindex Concatenation", "[MultiIndexConcatenation]")
+{
+    MultiIndex a1({1,0,2});
+    MultiIndex a2({3,0,6,7});
+
+    MultiIndex acat = a1.Concatenate(a2);
+
+    REQUIRE(acat.Length()==7);
+    CHECK(acat.Get(0)==1);
+    CHECK(acat.Get(1)==0);
+    CHECK(acat.Get(2)==2);
+    CHECK(acat.Get(3)==3);
+    CHECK(acat.Get(4)==0);
+    CHECK(acat.Get(5)==6);
+    CHECK(acat.Get(6)==7);
+}
+
+
 TEST_CASE( "Testing MultiIndex ordering", "[MultiIndexOrder]" ) {
 
     MultiIndex a({0,1,1,2});

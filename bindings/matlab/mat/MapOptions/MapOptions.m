@@ -3,6 +3,7 @@ classdef MapOptions
         basisType = BasisTypes.ProbabilistHermite;
         sigmoidType = SigmoidTypes.Logistic;
         edgeType = EdgeTypes.SoftPlus;
+        sigmoidBasisSumType = SigmoidSumSizeType.Linear;
         posFuncType = PosFuncTypes.SoftPlus;
         quadType = QuadTypes.AdaptiveSimpson;
         quadAbsTol = 1e-6;
@@ -37,11 +38,11 @@ classdef MapOptions
         function obj = set.sigmoidType(obj,type)
             obj.sigmoidType = type;
         end
-        function obj = set.edgeShape(obj,value)
-            obj.edgeShape = value;
-        end
         function obj = set.edgeType(obj,value)
             obj.edgeType = value;
+        end
+        function obj = set.sigmoidBasisSumType(obj,type)
+            obj.sigmoidBasisSumType = type;
         end
         function obj = set.quadType(obj,type)
             obj.quadType = type;
@@ -58,6 +59,9 @@ classdef MapOptions
         function obj = set.quadMinSub(obj,value)
             obj.quadMinSub = value;
         end
+        function obj = set.edgeShape(obj,value)
+            obj.edgeShape = value;
+        end
         function obj = set.quadPts(obj,value)
             obj.quadPts = value;
         end
@@ -71,19 +75,20 @@ classdef MapOptions
             optionsArray{1} = char(obj.basisType);
             optionsArray{2} = char(obj.sigmoidType);
             optionsArray{3} = char(obj.edgeType);
-            optionsArray{4} = char(obj.posFuncType);
-            optionsArray{5} = char(obj.quadType);
-            optionsArray{6} = obj.quadAbsTol;
-            optionsArray{7} = obj.quadRelTol;
-            optionsArray{8} = obj.quadMaxSub;
-            optionsArray{9} = obj.quadMinSub;
-            optionsArray{10} = obj.edgeShape;
-            optionsArray{11} = obj.quadPts;
-            optionsArray{12} = obj.contDeriv;
-            optionsArray{13} = obj.basisLB;
-            optionsArray{14} = obj.basisUB;
-            optionsArray{15} = obj.basisNorm;
-            optionsArray{16} = obj.nugget;
+            optionsArray{4} = char(obj.sigmoidBasisSumType);
+            optionsArray{5} = char(obj.posFuncType);
+            optionsArray{6} = char(obj.quadType);
+            optionsArray{7} = obj.quadAbsTol;
+            optionsArray{8} = obj.quadRelTol;
+            optionsArray{9} = obj.quadMaxSub;
+            optionsArray{10} = obj.quadMinSub;
+            optionsArray{11} = obj.edgeShape;
+            optionsArray{12} = obj.quadPts;
+            optionsArray{13} = obj.contDeriv;
+            optionsArray{14} = obj.basisLB;
+            optionsArray{15} = obj.basisUB;
+            optionsArray{16} = obj.basisNorm;
+            optionsArray{17} = obj.nugget;
         end
 
         function res = eq(obj1, obj2)
@@ -95,6 +100,7 @@ classdef MapOptions
             res = res && isequal(obj1.posFuncType, obj2.posFuncType);
             res = res && isequal(obj1.sigmoidType, obj2.sigmoidType);
             res = res && isequal(obj1.edgeType,    obj2.edgeType);
+            res = res && isequal(obj1.sigmoidBasisSumType, obj2.sigmoidBasisSumType);
             res = res && isequal(obj1.edgeShape,   obj2.edgeShape);
             res = res && isequal(obj1.quadType,    obj2.quadType);
             res = res && isequal(obj1.quadAbsTol,  obj2.quadAbsTol);
@@ -108,7 +114,8 @@ classdef MapOptions
 
         function Serialize(obj,filename)
             MParT_('MapOptions_Serialize',filename, char(obj.basisType),  ...
-            char(obj.sigmoidType), char(obj.edgeType), char(obj.posFuncType), char(obj.quadType), ...
+            char(obj.sigmoidType), char(obj.edgeType), char(obj.sigmoidBasisSumType), ...
+            char(obj.posFuncType), char(obj.quadType), ...
              obj.quadAbsTol, obj.quadRelTol, obj.quadMaxSub, obj.quadMinSub, obj.edgeShape, ...
              obj.quadPts, obj.contDeriv, obj.basisLB, obj.basisUB, obj.basisNorm, obj.nugget)
         end
@@ -130,19 +137,20 @@ classdef MapOptions
             obj.basisType    = optionsArray{1};
             obj.sigmoidType  = optionsArray{2};
             obj.edgeType     = optionsArray{3};
-            obj.posFuncType  = optionsArray{4};
-            obj.quadType     = optionsArray{5};
-            obj.quadAbsTol   = optionsArray{6};
-            obj.quadRelTol   = optionsArray{7};
-            obj.quadMaxSub   = optionsArray{8};
-            obj.quadMinSub   = optionsArray{9};
-            obj.edgeShape    = optionsArray{10};
-            obj.quadPts      = optionsArray{11};
-            obj.contDeriv    = optionsArray{12};
-            obj.basisLB      = optionsArray{13};
-            obj.basisUB      = optionsArray{14};
-            obj.basisNorm    = optionsArray{15};
-            obj.nugget       = optionsArray{16};
+            obj.sigmoidBasisSumType = optionsArray{4};
+            obj.posFuncType  = optionsArray{5};
+            obj.quadType     = optionsArray{6};
+            obj.quadAbsTol   = optionsArray{7};
+            obj.quadRelTol   = optionsArray{8};
+            obj.quadMaxSub   = optionsArray{9};
+            obj.quadMinSub   = optionsArray{10};
+            obj.edgeShape    = optionsArray{11};
+            obj.quadPts      = optionsArray{12};
+            obj.contDeriv    = optionsArray{13};
+            obj.basisLB      = optionsArray{14};
+            obj.basisUB      = optionsArray{15};
+            obj.basisNorm    = optionsArray{16};
+            obj.nugget       = optionsArray{17};
         end
     end
 

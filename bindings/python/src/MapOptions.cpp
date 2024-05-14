@@ -38,6 +38,11 @@ void mpart::binding::MapOptionsWrapper(py::module &m)
     py::enum_<SigmoidTypes>(m, "SigmoidTypes")
     .value("Logistic",SigmoidTypes::Logistic);
 
+    // SigmoidSumTypes
+    py::enum_<SigmoidSumSizeType>(m, "SigmoidSumSizeType")
+    .value("Linear",SigmoidSumSizeType::Linear)
+    .value("Constant",SigmoidSumSizeType::Constant);
+
     // EdgeTypes
     py::enum_<EdgeTypes>(m, "EdgeTypes")
     .value("SoftPlus",EdgeTypes::SoftPlus);
@@ -56,6 +61,7 @@ void mpart::binding::MapOptionsWrapper(py::module &m)
     .def_readwrite("edgeType", &MapOptions::edgeType)
     .def_readwrite("edgeShape", &MapOptions::edgeShape)
     .def_readwrite("sigmoidType", &MapOptions::sigmoidType)
+    .def_readwrite("sigmoidBasisSumType", &MapOptions::sigmoidBasisSumType)
     .def_readwrite("quadType", &MapOptions::quadType)
     .def_readwrite("quadAbsTol", &MapOptions::quadAbsTol)
     .def_readwrite("quadRelTol", &MapOptions::quadRelTol)

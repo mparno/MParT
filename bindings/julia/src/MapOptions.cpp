@@ -32,6 +32,11 @@ void mpart::binding::MapOptionsWrapper(jlcxx::Module &mod) {
     mod.add_bits<SigmoidTypes>("__SigmoidTypes", jlcxx::julia_type("CppEnum"));
     mod.set_const("__Logistic", SigmoidTypes::Logistic);
 
+    // SigmoidSumTypes
+    mod.add_bits<SigmoidSumSizeType>("__SigmoidSumSizeType", jlcxx::julia_type("CppEnum"));
+    mod.set_const("__Linear", SigmoidSumSizeType::Linear);
+    mod.set_const("__Constant", SigmoidSumSizeType::Constant);
+
     // EdgeTypes: TODO: SoftPlus overlaps with PosFuncTypes, needs to be fixed
     // mod.add_bits<EdgeTypes>("__EdgeTypes", jlcxx::julia_type("CppEnum"));
     // mod.set_const("__SoftPlus", EdgeTypes::SoftPlus);
@@ -45,6 +50,7 @@ void mpart::binding::MapOptionsWrapper(jlcxx::Module &mod) {
         .method("__posFuncType!", [](MapOptions &opts, unsigned int f){ opts.posFuncType = static_cast<PosFuncTypes>(f); })
         .method("__quadType!", [](MapOptions &opts, unsigned int quad){ opts.quadType = static_cast<QuadTypes>(quad); })
         .method("__sigmoidType!", [](MapOptions &opts, unsigned int sig){ opts.sigmoidType = static_cast<SigmoidTypes>(sig); })
+        .method("__sigmoidBasisSumType!", [](MapOptions &opts, unsigned int sig){ opts.sigmoidBasisSumType = static_cast<SigmoidSumSizeType>(sig); })
         .method("__edgeType!", [](MapOptions &opts, unsigned int edge){ opts.edgeType = static_cast<EdgeTypes>(edge); })
         .method("__edgeShape!", [](MapOptions &opts, double width){ opts.edgeShape = width; })
         .method("__quadAbsTol!", [](MapOptions &opts, double tol){ opts.quadAbsTol = tol; })

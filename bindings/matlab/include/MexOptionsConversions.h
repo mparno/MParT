@@ -11,8 +11,9 @@
 namespace mpart{
 namespace binding{
 
-    const unsigned int MPART_MEX_MAPOPTIONS_ARGCOUNT = 16;
+    const unsigned int MPART_MEX_MAPOPTIONS_ARGCOUNT = 17;
     const unsigned int MPART_MEX_TRAINOPTIONS_ARGCOUNT = 9;
+    const unsigned int MPART_MEX_ATMOPTIONS_ARGCOUNT = MPART_MEX_MAPOPTIONS_ARGCOUNT + MPART_MEX_TRAINOPTIONS_ARGCOUNT + 3;
 
     MapOptions MapOptionsFromMatlab(mexplus::InputArguments &input, int start);
 
