@@ -304,7 +304,7 @@ MEX_DEFINE(ConditionalMap_CoeffBounds) (int nlhs, mxArray* plhs[],
   OutputArguments output(nlhs, plhs, 2);
   const ConditionalMapMex& condMap = Session<ConditionalMapMex>::getConst(input.get(0));
   Kokkos::View<double*, Kokkos::HostSpace> lb, ub;
-  std::tie(lb,ub) = condMap.CoeffBounds();
+  std::tie(lb,ub) = condMap.map_ptr->CoeffBounds();
   auto lbvec = KokkosToVec(lb);
   auto ubvec = KokkosToVec(ub);
   
