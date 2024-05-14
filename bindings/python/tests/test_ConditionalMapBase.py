@@ -25,6 +25,14 @@ def test_CoeffsMap():
     assert np.all(component.CoeffMap() == coeffs)
 
 
+def test_CoeffBounds():
+    lb, ub = component.CoeffBounds()
+    assert lb.shape[0] == component.numCoeffs 
+    assert ub.shape[0] == component.numCoeffs 
+
+    assert np.max(lb)==-np.inf 
+    assert np.min(ub)==np.inf
+    
 def test_Evaluate():
     assert component.Evaluate(x).shape == (1,num_samples)
 
