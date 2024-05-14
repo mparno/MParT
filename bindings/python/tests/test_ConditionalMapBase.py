@@ -32,10 +32,9 @@ def test_CoeffBounds():
 
     assert np.max(lb)==-np.inf 
     assert np.min(ub)==np.inf
-    
+
 def test_Evaluate():
     assert component.Evaluate(x).shape == (1,num_samples)
-
 
 def test_LogDeterminant():
     assert component.LogDeterminant(x).shape == (num_samples,)
