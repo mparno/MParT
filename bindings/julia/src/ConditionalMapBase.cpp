@@ -44,7 +44,7 @@ void mpart::binding::ConditionalMapBaseWrapper(jlcxx::Module &mod) {
             jlcxx::ArrayRef<double> ub = jlMalloc<double>(map.numCoeffs);
             Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> lbview(&lb[0], lb.size());
             Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> ubview(&ub[0], ub.size());
-            map->FillCoeffBoundsImpl(lbview,ubview);
+            map.FillCoeffBoundsImpl(lbview,ubview);
             return std::make_pair(lb,ub);
         })
         ;
