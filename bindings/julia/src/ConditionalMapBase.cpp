@@ -39,13 +39,13 @@ void mpart::binding::ConditionalMapBaseWrapper(jlcxx::Module &mod) {
             map.InverseImpl(JuliaToKokkos(x1), JuliaToKokkos(r), JuliaToKokkos(output));
             return output;
         })
-        .method("CoeffBounds", [](ConditionalMapBase<Kokkos::HostSpace> &map) {
-            jlcxx::ArrayRef<double> lb = jlMalloc<double>(map.numCoeffs);
-            jlcxx::ArrayRef<double> ub = jlMalloc<double>(map.numCoeffs);
-            Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> lbview(&lb[0], lb.size());
-            Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> ubview(&ub[0], ub.size());
+        .method("__CoeffBounds", [](ConditionalMapBase<Kokkos::HostSpace> &map) {
+            int numCoeffs = map.numCoeffs;
+            jlcxx::ArrayRef<double> bounds = jlMalloc<double>(2*numCoeffs);
+            Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> lbview(&bounds[0], numCoeffs);
+            Kokkos::View<double*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>> ubview(&bounds[numCoeffs], numCoeffs);
             map.FillCoeffBoundsImpl(lbview,ubview);
-            return std::make_pair(lb,ub);
+            return bounds;
         })
         ;
     jlcxx::stl::apply_stl<ConditionalMapBase<Kokkos::HostSpace>*>(mod);
