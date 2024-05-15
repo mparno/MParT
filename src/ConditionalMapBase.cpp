@@ -296,13 +296,11 @@ Eigen::RowMatrixXd ConditionalMapBase<mpart::DeviceSpace>::LogDeterminantInputGr
 template<typename MemorySpace>
 std::pair<Kokkos::View<double*,Kokkos::HostSpace>, Kokkos::View<double*,Kokkos::HostSpace>> ConditionalMapBase<MemorySpace>::CoeffBounds() const
 {
-    Kokkos::View<double*, MemorySpace> lb("lower bound",this->numCoeffs);
-    Kokkos::View<double*, MemorySpace> ub("upper bound",this->numCoeffs);
+    Kokkos::View<double*, Kokkos::HostSpace> lb("lower bound",this->numCoeffs);
+    Kokkos::View<double*, Kokkos::HostSpace> ub("upper bound",this->numCoeffs);
     
     FillCoeffBoundsImpl(lb,ub);
-    Kokkos::View<double*,Kokkos::HostSpace> lb_h = Kokkos::mirror_view_and_copy(Kokkos::HostSpace(), lb);
-    Kokkos::View<double*,Kokkos::HostSpace> ub_h = Kokkos::mirror_view_and_copy(Kokkos::HostSpace(), ub);
-    return std::make_pair(lb_h,ub_h);
+    return std::make_pair(lb,ub);
 }
 
 template<typename MemorySpace>
