@@ -30,6 +30,7 @@ void UnivariateExpansion_FillCoeffBoundsImpl(UnivariateExpansion<MemorySpace, Si
                                              Kokkos::View<double*,Kokkos::HostSpace> ub)
 {
     Kokkos::deep_copy(lb,0.0);
+    Kokkos::deep_copy(Kokkos::subview(lb,std::pair<int,int>(0,1)), -std::numeric_limits<double>::infinity()); // Constant term can be negative
     Kokkos::deep_copy(ub,std::numeric_limits<double>::infinity());
 }    
 
