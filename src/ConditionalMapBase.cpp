@@ -296,8 +296,8 @@ Eigen::RowMatrixXd ConditionalMapBase<mpart::DeviceSpace>::LogDeterminantInputGr
 template<typename MemorySpace>
 std::pair<Kokkos::View<double*,Kokkos::HostSpace>, Kokkos::View<double*,Kokkos::HostSpace>> ConditionalMapBase<MemorySpace>::CoeffBounds() const
 {
-    Kokkos::View<double*, MemorySpace> lb("lower bound",this->numCoeffs);
-    Kokkos::View<double*, MemorySpace> ub("upper bound",this->numCoeffs);
+    Kokkos::View<double*, Kokkos::HostSpace> lb("lower bound",this->numCoeffs);
+    Kokkos::View<double*, Kokkos::HostSpace> ub("upper bound",this->numCoeffs);
     
     FillCoeffBoundsImpl(lb,ub);
     return std::make_pair(lb,ub);

@@ -393,7 +393,8 @@ namespace mpart{
                 
             // Fill in the lower bounds
             Kokkos::deep_copy(lb, -std::numeric_limits<double>::infinity());
-            Kokkos::parallel_for("lb loop", inds.extent(0), KOKKOS_LAMBDA (const int i) {
+            Kokkos::RangePolicy<ExecutionSpace> policy(0, inds.extent(0));
+            Kokkos::parallel_for("lb loop", policy, KOKKOS_LAMBDA (const int i) {
                 lb(inds(i)) = 0.0;
             });
 
